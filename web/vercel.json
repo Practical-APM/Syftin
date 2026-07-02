@@ -1,16 +1,1 @@
-{
-  "_crons": [
-    {
-      "path": "/api/cron/health-alerts",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/contributor-ops",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/scheduled-exports",
-      "schedule": "0 2 * * *"
-    }
-  ]
-}
+{}

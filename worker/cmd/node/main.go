@@ -61,6 +61,20 @@ func main() {
 	}
 
 	run()
+	
+	eventCh := make(chan string)
+	go func() {
+		for {
+			if ctx.Err() != nil {
+				return
+			}
+			err := node.ListenForTasks(ctx, eventCh)
+			if err != nil && ctx.Err() == nil {
+				logger.Warn("sse stream disconnected, reconnecting in 5s", slog.String("error", err.Error()))
+				time.Sleep(5 * time.Second)
+			}
+		}
+	}()
 	for {
 		select {
 		case <-ctx.Done():
@@ -70,6 +84,10 @@ func main() {
 			node.RefreshMetered()
 			node.LogGuardStatus()
 			node.ReportTelemetry(ctx)
+		case event := <-eventCh:
+			if event == "task_ready" {
+				run()
+			}
 		case <-pollTicker.C:
 			run()
 		}

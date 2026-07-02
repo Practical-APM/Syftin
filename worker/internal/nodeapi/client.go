@@ -1,6 +1,7 @@
 package nodeapi
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -110,6 +111,46 @@ func (c *Client) ClaimTask(ctx context.Context, hostname string) (*FetchTask, er
 		return nil, err
 	}
 	return out.Task, nil
+}
+
+func (c *Client) ListenTaskEvents(ctx context.Context, hostname, tier string, eventCh chan<- string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/node/tasks/stream?node_id="+hostname+"&contributor_id="+c.token+"&tier="+tier, nil)
+	if err != nil {
+		return err
+	}
+	c.setHeaders(req, hostname)
+	req.Header.Set("Accept", "text/event-stream")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("stream failed: %d", resp.StatusCode)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	var currentEvent string
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		line = strings.TrimSpace(line)
+		
+		if strings.HasPrefix(line, "event:") {
+			currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+		} else if line == "" && currentEvent != "" {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case eventCh <- currentEvent:
+			}
+			currentEvent = ""
+		}
+	}
 }
 
 func (c *Client) CompleteTask(ctx context.Context, taskID, html string) error {

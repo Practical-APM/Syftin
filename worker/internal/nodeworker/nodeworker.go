@@ -235,6 +235,10 @@ func (n *Node) RunOnce(ctx context.Context) error {
 	return n.api.CompleteTask(ctx, ft.ID, html)
 }
 
+func (n *Node) ListenForTasks(ctx context.Context, eventCh chan<- string) error {
+	return n.api.ListenTaskEvents(ctx, n.hostname, string(n.caps.RecommendedTier), eventCh)
+}
+
 // Capabilities exposes the last probe result (for tests and logging).
 func (n *Node) Capabilities() sysinfo.Capabilities {
 	return n.caps
