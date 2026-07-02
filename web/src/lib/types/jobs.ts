@@ -24,6 +24,7 @@ export type Job = {
   variance_flags?: string[];
   parent_batch_id?: string | null;
   shard_index?: number | null;
+  required_region?: string | null;
 };
 
 export const STATUS_LABELS: Record<JobStatus, string> = {

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, target_url, example_schema } = body;
+    const { name, target_url, example_schema, required_region } = body;
 
     if (!name || !target_url || !example_schema) {
       return NextResponse.json(
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const result = await createJob(
-      { name, target_url, example_schema },
+      { name, target_url, example_schema, required_region },
       auth.org,
     );
 

@@ -290,6 +290,7 @@ export async function createFetchTaskForJob(
   targetUrl: string,
   domain: string,
   jobComputeTier?: string,
+  requiredRegion?: string,
 ): Promise<void> {
   if (!isPhase2Enabled() || !isSupabaseConfigured()) return;
 
@@ -311,6 +312,7 @@ export async function createFetchTaskForJob(
         reward_paise: computeFetchRewardPaise(requiredTier),
         required_tier: requiredTier,
         consensus_group_id: groupId,
+        required_region: requiredRegion ?? null,
       },
       {
         job_id: jobId,
@@ -320,6 +322,7 @@ export async function createFetchTaskForJob(
         reward_paise: computeFetchRewardPaise(requiredTier),
         required_tier: requiredTier,
         consensus_group_id: groupId,
+        required_region: requiredRegion ?? null,
       }
     ]);
   } else {
@@ -330,6 +333,7 @@ export async function createFetchTaskForJob(
       status: "pending",
       reward_paise: computeFetchRewardPaise(requiredTier),
       required_tier: requiredTier,
+      required_region: requiredRegion ?? null,
     });
   }
 }

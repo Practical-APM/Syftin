@@ -42,6 +42,7 @@ type DbJob = {
   shard_index: number | null;
   created_at: string;
   completed_at: string | null;
+  required_region: string | null;
 };
 
 function mapDbJob(row: DbJob): Job {
@@ -62,6 +63,7 @@ function mapDbJob(row: DbJob): Job {
     attempt_count: row.attempt_count ?? 0,
     parent_batch_id: row.parent_batch_id,
     shard_index: row.shard_index,
+    required_region: row.required_region,
     result_url:
       row.status === "completed"
         ? `/api/jobs/${row.id}/result`
@@ -132,6 +134,7 @@ export type CreateJobInput = {
   target_url: string;
   example_schema: Record<string, unknown>;
   organization_id?: string;
+  required_region?: string;
 };
 
 export type CreateJobResult =
@@ -218,6 +221,7 @@ export async function createJob(
       status: "pending",
       requires_edge_fetch: distributed,
       compute_tier: jobTier,
+      required_region: input.required_region ?? null,
     })
     .select("*")
     .single();
@@ -227,7 +231,7 @@ export async function createJob(
   }
 
   if (distributed && data) {
-    await createFetchTaskForJob(data.id, target_url, domain, jobTier);
+    await createFetchTaskForJob(data.id, target_url, domain, jobTier, input.required_region);
   }
 
   if (isCreditsEnforced() && data) {
