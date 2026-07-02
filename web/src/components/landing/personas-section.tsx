@@ -42,7 +42,6 @@ const personas = [
     },
     accent: "border-emerald-500/25 bg-emerald-500/5",
     iconColor: "text-emerald-600",
-    phase2Only: true,
   },
   {
     id: "curious",
@@ -63,9 +62,6 @@ const personas = [
 ] as const;
 
 export function PersonasSection() {
-  const phase2 = isPhase2EnabledClient();
-  const visible = personas.filter((p) => !("phase2Only" in p && p.phase2Only) || phase2);
-
   return (
     <section id="who-its-for" className="marketing-section border-y border-ivory-200 bg-ivory-100/40">
       <div className="marketing-container">
@@ -83,7 +79,7 @@ export function PersonasSection() {
         </FadeIn>
 
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {visible.map((persona, i) => (
+          {personas.map((persona, i) => (
             <FadeIn key={persona.id} delay={i * 0.05}>
               <HoverLift className="h-full">
                 <article

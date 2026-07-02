@@ -6,7 +6,7 @@ import { DashboardPreview } from "@/components/landing/dashboard-preview";
 import { HeroBackground } from "@/components/landing/hero-background";
 import { PulseDot } from "@/components/landing/micro-interactions";
 
-const chips = ["Pricing", "Registries", "Job listings"];
+const chips = ["Research", "LLM Fine-tuning", "AI Model Training"];
 
 export function Hero() {
   return (
@@ -22,16 +22,16 @@ export function Hero() {
           </FadeIn>
           <FadeIn delay={0.05}>
             <h1 className="text-4xl font-semibold leading-[1.06] tracking-tight text-graphite-900 sm:text-5xl lg:text-[3.6rem]">
-              Structured data from
+              High-quality niche data
               <br />
-              <span className="text-honey-600">public websites.</span>
+              for <span className="text-honey-600">research & AI.</span>
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
             <p className="mt-6 max-w-lg text-lg text-graphite-500">
-              Define the fields you need. Syftin collects from approved public
-              sites, screens for privacy, and delivers JSON — or pushes to your
-              webhook, bucket, or SFTP.
+              Turn public websites into structured JSON datasets for research,
+              LLM fine-tuning, and AI model training — privacy-screened,
+              quality-assured, and delivered right to your stack.
             </p>
           </FadeIn>
           <FadeIn delay={0.14}>
