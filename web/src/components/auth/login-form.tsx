@@ -1,0 +1,125 @@
+"use client";
+
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { SyftinLogo } from "@/components/brand/syftin-logo";
+import { AccessRequestForm } from "@/components/landing/access-request-form";
+import { isPhase2EnabledClient } from "@/lib/env";
+
+export function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/dashboard";
+  const authError = searchParams.get("error") === "auth";
+  const inviteMessage = searchParams.get("message");
+
+  const initialError = authError
+    ? "Sign-in link expired or invalid. Please try again."
+    : inviteMessage
+      ? decodeURIComponent(inviteMessage)
+      : null;
+
+  const isContributor = next.startsWith("/contributor");
+
+  return (
+    <div className="flex min-h-dvh">
+      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-graphite-950 p-12 lg:flex">
+        <div className="gradient-radial-dark pointer-events-none absolute inset-0" />
+        <div className="relative">
+          <SyftinLogo variant="light" />
+        </div>
+        <div className="relative">
+          <h2 className="text-3xl font-semibold tracking-tight text-ivory-50">
+            {isContributor ? (
+              <>
+                Run a Syftin node,
+                <br />
+                <span className="text-emerald-400">earn from approved fetches.</span>
+              </>
+            ) : (
+              <>
+                Structured web data,
+                <br />
+                <span className="text-honey-400">delivered to your dashboard.</span>
+              </>
+            )}
+          </h2>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-graphite-400">
+            {isContributor
+              ? "Sign in to manage devices, track earnings, and install the background node app."
+              : "Track collection jobs, review quality scores, and download JSON files for the public sources your team relies on."}
+          </p>
+        </div>
+        <p className="relative text-xs text-graphite-500">
+          {isContributor
+            ? "Contributor access is invite-only during the pilot."
+            : "Early access is invite-only while we onboard new business customers."}
+        </p>
+      </div>
+
+      <div className="flex flex-1 flex-col justify-center bg-ivory-50 px-6 py-12 lg:px-16">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-8 lg:hidden">
+            <SyftinLogo />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-graphite-900">
+            {isContributor ? "Contributor sign in" : "Sign in"}
+          </h1>
+          <p className="mt-2 text-sm text-graphite-500">
+            {isContributor
+              ? "We'll email you a secure sign-in link for the contributor portal."
+              : "We'll email you a secure sign-in link for the Syftin dashboard."}
+          </p>
+
+          {initialError && (
+            <p className="mt-4 text-sm text-red-600">{initialError}</p>
+          )}
+
+          <AccessRequestForm
+            source="login"
+            variant="login"
+            next={next}
+            className="mt-8"
+          />
+
+          <p className="mt-8 text-center text-xs leading-relaxed text-graphite-400">
+            By continuing, you agree to our{" "}
+            <Link href="/terms" className="text-graphite-500 hover:text-graphite-700">
+              Terms
+            </Link>
+            ,{" "}
+            <Link href="/dpa" className="text-graphite-500 hover:text-graphite-700">
+              DPA
+            </Link>
+            , and{" "}
+            <Link href="/privacy" className="text-graphite-500 hover:text-graphite-700">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+          {isPhase2EnabledClient() && !isContributor && (
+            <p className="mt-4 text-center text-xs text-graphite-400">
+              Running a worker node?{" "}
+              <Link
+                href="/login?next=/contributor"
+                className="font-medium text-emerald-600 hover:text-emerald-500"
+              >
+                Contributor sign in
+              </Link>
+            </p>
+          )}
+          {isContributor && (
+            <p className="mt-4 text-center text-xs text-graphite-400">
+              Need the buyer dashboard?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-honey-600 hover:text-honey-500"
+              >
+                Business sign in
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

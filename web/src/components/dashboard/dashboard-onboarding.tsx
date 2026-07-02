@@ -1,0 +1,94 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, Globe, FileJson, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const steps = [
+  { icon: Globe, label: "Pick a public website" },
+  { icon: FileJson, label: "Paste your field list" },
+  { icon: Download, label: "Download JSON" },
+];
+
+const sampleJson = `[
+  {
+    "product_name": "Amul Milk 1L",
+    "price_inr": 56,
+    "in_stock": true
+  }
+]`;
+
+export function DashboardOnboarding() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm">
+      <div className="grid lg:grid-cols-2">
+        <div className="flex flex-col justify-center p-8 sm:p-10 lg:p-12">
+          <p className="text-xs font-medium uppercase tracking-wider text-honey-600">
+            Get started
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-graphite-900 sm:text-[1.65rem]">
+            Your first dataset is three steps away
+          </h2>
+
+          <ul className="mt-8 space-y-3.5">
+            {steps.map((step, i) => (
+              <motion.li
+                key={step.label}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.4 }}
+                className="flex items-center gap-3"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10">
+                  <step.icon className="h-4 w-4 text-honey-600" />
+                </span>
+                <span className="text-sm font-medium text-graphite-700">
+                  {step.label}
+                </span>
+              </motion.li>
+            ))}
+          </ul>
+
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <Link href="/dashboard/jobs/new">
+              <Button size="lg" className="group">
+                Create your first job
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="border-t border-ivory-200 bg-graphite-950 p-6 sm:p-8 lg:border-t-0 lg:border-l">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs text-graphite-500">Example output</span>
+            <span className="rounded-md bg-graphite-800 px-2 py-0.5 text-[10px] text-graphite-400">
+              Sample
+            </span>
+          </div>
+          <motion.pre
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="overflow-x-auto rounded-lg border border-graphite-800 bg-graphite-900 p-4 font-mono text-[11px] leading-relaxed text-emerald-400/90"
+          >
+            {sampleJson}
+          </motion.pre>
+          <div className="mt-4 flex h-10 items-end gap-1 opacity-70">
+            {[35, 55, 45, 70, 50, 85, 65].map((h, i) => (
+              <motion.div
+                key={i}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.3 + i * 0.04, duration: 0.35 }}
+                className="flex-1 origin-bottom rounded-sm bg-honey-500/60"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

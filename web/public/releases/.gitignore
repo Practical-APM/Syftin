@@ -1,0 +1,4 @@
+# Prebuilt binaries — generate with worker/scripts/build-node-release.sh
+syftin-node-*
+syftin-playwright-*
+manifest.json

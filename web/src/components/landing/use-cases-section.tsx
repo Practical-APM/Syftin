@@ -1,0 +1,83 @@
+"use client";
+
+import { Briefcase, Building2, ShoppingCart } from "lucide-react";
+import { FadeIn } from "@/components/ui/fade-in";
+import { HoverLift } from "@/components/landing/micro-interactions";
+
+const useCases = [
+  {
+    icon: ShoppingCart,
+    title: "Retail & delivery pricing",
+    domain: "blinkit.com · zeptonow.com",
+    bar: "bg-emerald-500",
+    mock: ["Amul Milk — ₹56", "Bread — ₹45", "Eggs — ₹72"],
+  },
+  {
+    icon: Building2,
+    title: "Company registries",
+    domain: "mca.gov.in",
+    bar: "bg-honey-500",
+    mock: ["CIN lookup", "Filing date", "Return type"],
+  },
+  {
+    icon: Briefcase,
+    title: "Job market signals",
+    domain: "naukri.com",
+    bar: "bg-blue-500",
+    mock: ["React roles ↑", "Bangalore hiring", "Salary bands"],
+  },
+];
+
+export function UseCasesSection() {
+  return (
+    <section id="use-cases" className="marketing-section">
+      <div className="marketing-container">
+        <FadeIn>
+          <h2 className="text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+            Built for real research workflows
+          </h2>
+          <p className="mt-3 text-graphite-500">
+            Pilot customers use Syftin across retail pricing, corporate
+            registries, and hiring intelligence — all from approved public
+            sources.
+          </p>
+        </FadeIn>
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {useCases.map((item, i) => (
+            <FadeIn key={item.title} delay={i * 0.06}>
+              <HoverLift className="h-full">
+                <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-ivory-200 bg-ivory-50">
+                  <div className={`h-1.5 ${item.bar}`} />
+                  <div className="flex flex-1 flex-col p-6">
+                    <item.icon
+                      className="h-5 w-5 text-graphite-700"
+                      strokeWidth={1.5}
+                    />
+                    <h3 className="mt-4 text-lg font-semibold text-graphite-900">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 font-mono text-[11px] text-graphite-400">
+                      {item.domain}
+                    </p>
+                    <ul className="mt-5 space-y-2 border-t border-ivory-200 pt-5">
+                      {item.mock.map((line) => (
+                        <li
+                          key={line}
+                          className="flex items-center gap-2 text-sm text-graphite-500"
+                        >
+                          <span className="h-1 w-1 rounded-full bg-honey-500" />
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              </HoverLift>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
