@@ -1,0 +1,60 @@
+{
+  "target_compliance": 98,
+  "domains": [
+    {
+      "domain": "naukri.com",
+      "name": "Naukri React jobs",
+      "url": "https://www.naukri.com/react-jobs",
+      "schema": {
+        "title": "Senior Frontend Engineer",
+        "company": "Example Corp",
+        "skills": ["React", "TypeScript"],
+        "posted_date": "2026-06-30"
+      }
+    },
+    {
+      "domain": "blinkit.com",
+      "name": "Blinkit groceries",
+      "url": "https://blinkit.com",
+      "schema": {
+        "product_name": "Amul Taaza Milk 1L",
+        "price_inr": 56,
+        "mrp_inr": 62,
+        "in_stock": true
+      }
+    },
+    {
+      "domain": "flipkart.com",
+      "name": "Flipkart search",
+      "url": "https://www.flipkart.com/search?q=laptop",
+      "schema": {
+        "product_name": "Example Product",
+        "price_inr": 999,
+        "rating": 4.2,
+        "in_stock": true
+      }
+    },
+    {
+      "domain": "mca.gov.in",
+      "name": "MCA public search",
+      "url": "https://www.mca.gov.in/content/mca/global/en/home.html",
+      "schema": {
+        "company_name": "Example Pvt Ltd",
+        "cin": "U12345MH2020PTC123456",
+        "filing_date": "2026-06-20",
+        "filing_type": "Annual Return"
+      }
+    },
+    {
+      "domain": "amazon.in",
+      "name": "Amazon India search",
+      "url": "https://www.amazon.in/s?k=books",
+      "schema": {
+        "product_name": "Example Product",
+        "price_inr": 1299,
+        "rating": 4.5,
+        "in_stock": true
+      }
+    }
+  ]
+}

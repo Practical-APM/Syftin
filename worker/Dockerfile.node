@@ -1,0 +1,13 @@
+# Lightweight edge node image for contributors (no Ollama / hub worker).
+FROM golang:1.22-bookworm AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /syftin-node ./cmd/node
+
+FROM mcr.microsoft.com/playwright:v1.49.0-jammy
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /syftin-node /usr/local/bin/syftin-node
+ENV NODE_POLL_INTERVAL=10s
+ENTRYPOINT ["syftin-node"]

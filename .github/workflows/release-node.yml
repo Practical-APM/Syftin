@@ -1,0 +1,108 @@
+name: Release node binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: amd64
+          - goos: windows
+            goarch: amd64
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: go mod tidy
+      - name: Build syftin-node
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          ext=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then ext=".exe"; fi
+          go build -ldflags "-s -w" \
+            -o "../syftin-node-${{ matrix.goos }}-${{ matrix.goarch }}${ext}" \
+            ./cmd/node
+      - name: Build syftin-playwright
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          ext=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then ext=".exe"; fi
+          go build -ldflags "-s -w" \
+            -o "../syftin-playwright-${{ matrix.goos }}-${{ matrix.goarch }}${ext}" \
+            github.com/playwright-community/playwright-go/cmd/playwright@v0.5700.1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: syftin-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            syftin-node-${{ matrix.goos }}-${{ matrix.goarch }}
+            syftin-playwright-${{ matrix.goos }}-${{ matrix.goarch }}
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Flatten artifacts
+        run: |
+          find artifacts -type f -name 'syftin-*' -exec mv {} artifacts/ \;
+          ls -la artifacts/
+      - name: Write manifest.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          cat > artifacts/manifest.json <<EOF
+          {
+            "version": "${TAG}",
+            "playwrightGo": "v0.5700.1",
+            "playwrightDriver": "1.57.0",
+            "chromiumRevision": "1200",
+            "assets": [
+              "syftin-node-darwin-arm64",
+              "syftin-node-darwin-amd64",
+              "syftin-node-linux-arm64",
+              "syftin-node-linux-amd64",
+              "syftin-playwright-darwin-arm64",
+              "syftin-playwright-darwin-amd64",
+              "syftin-playwright-linux-arm64",
+              "syftin-playwright-linux-amd64",
+              "syftin-node-windows-amd64.exe",
+              "syftin-playwright-windows-amd64.exe"
+            ]
+          }
+          EOF
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/syftin-* artifacts/manifest.json
+          generate_release_notes: true
