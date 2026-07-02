@@ -17,10 +17,10 @@ export function CtaSection() {
           <div className="relative overflow-hidden rounded-3xl bg-graphite-900 px-8 py-14 sm:px-16">
             <div className="gradient-radial-dark pointer-events-none absolute inset-0" />
             <div className="relative mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-semibold tracking-tight text-ivory-50 sm:text-4xl">
+              <h2 className="marketing-title text-3xl sm:text-4xl">
                 Ready to collect data the right way?
               </h2>
-              <p className="mx-auto mt-3 max-w-lg text-graphite-400">
+              <p className="marketing-lead mx-auto max-w-lg">
                 Request buyer access with your work email, or sign in if you
                 already have an invite.
               </p>

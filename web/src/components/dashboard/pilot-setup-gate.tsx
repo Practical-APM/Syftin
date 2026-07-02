@@ -54,27 +54,27 @@ export function PilotSetupGate({ children }: { children: React.ReactNode }) {
   if (org && !org.dpaSignedAt) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
-        <div className="max-w-md rounded-xl border border-ivory-200 bg-white p-8 shadow-sm">
+        <div className="max-w-md rounded-xl border border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-900 p-8 shadow-sm">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-honey-500/10">
             <ShieldCheck className="h-5 w-5 text-honey-600" />
           </div>
-          <h2 className="mt-4 text-xl font-semibold text-graphite-900">
+          <h2 className="app-page-title text-xl leading-tight">
             Accept the Data Processing Agreement
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-graphite-500">
+          <p className="app-page-lead">
             Before creating collection jobs in{" "}
-            <span className="font-medium text-graphite-700">{org.orgName}</span>
+            <span className="font-medium text-graphite-700 dark:text-graphite-200">{org.orgName}</span>
             , review and accept our DPA. You remain the data controller; Syftin
             acts as processor for whitelisted public sources only.
           </p>
           <Link
             href="/dpa"
             target="_blank"
-            className="mt-4 inline-block text-sm font-medium text-honey-600 hover:text-honey-500"
+            className="mt-4 inline-block text-sm font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
           >
             Read the DPA →
           </Link>
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
           <Button
             className="mt-6 w-full"
             onClick={acceptDpa}

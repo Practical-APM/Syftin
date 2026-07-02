@@ -86,13 +86,13 @@ export function InteractiveDemo() {
       <div className="marketing-container">
         <FadeIn>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-graphite-500">
+            <p className="marketing-eyebrow">
               Interactive walkthrough
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+            <h2 className="marketing-title mt-3 text-3xl sm:text-4xl">
               See how a collection job runs
             </h2>
-            <p className="mt-3 text-sm text-graphite-500">
+            <p className="marketing-lead">
               Pick a use case, then simulate the same pipeline your dashboard
               uses — from approved-site check to delivery.
             </p>

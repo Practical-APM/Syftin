@@ -12,7 +12,11 @@ export default async function DashboardPageRoute() {
     <>
       <DashboardHeader
         title={hasJobs ? "Overview" : "Welcome"}
-        description={hasJobs ? "Summary of your collection activity." : undefined}
+        description={
+          hasJobs
+            ? "Summary of your collection activity."
+            : "Create your first collection job to start receiving structured JSON."
+        }
         action={
           hasJobs ? (
             <Link

@@ -12,23 +12,23 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pt-28 pb-20 lg:pt-36 lg:pb-28">
       <HeroBackground />
-      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)] lg:gap-16">
+      <div className="marketing-container relative grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.58fr)] lg:gap-14">
         <div>
           <FadeIn>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-ivory-200 bg-ivory-50/80 px-3.5 py-1.5 text-xs text-graphite-500 backdrop-blur-sm">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-ivory-200 dark:border-graphite-700 bg-ivory-50/80 dark:bg-graphite-900/80 px-3.5 py-1.5 text-xs font-light text-graphite-500 dark:text-graphite-300 backdrop-blur-sm">
               <PulseDot />
               Early access open
             </div>
           </FadeIn>
           <FadeIn delay={0.05}>
-            <h1 className="text-4xl font-semibold leading-[1.06] tracking-tight text-graphite-900 sm:text-5xl lg:text-[3.6rem]">
+            <h1 className="marketing-hero-title text-4xl sm:text-5xl lg:text-[3.6rem]">
               High-quality niche data
               <br />
-              for <span className="text-honey-600">research & AI.</span>
+              <span className="text-honey-600 dark:text-honey-400">for research & AI.</span>
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <p className="mt-6 max-w-lg text-lg text-graphite-500">
+            <p className="marketing-lead mt-6 max-w-lg text-base sm:text-lg">
               Turn public websites into structured JSON datasets for research,
               LLM fine-tuning, and AI model training — privacy-screened,
               quality-assured, and delivered right to your stack.
@@ -39,7 +39,7 @@ export function Hero() {
               {chips.map((chip) => (
                 <span
                   key={chip}
-                  className="rounded-full border border-ivory-200 bg-ivory-50 px-3.5 py-1.5 text-xs font-medium text-graphite-600"
+                  className="rounded-full border border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-900/50 px-3.5 py-1.5 text-xs font-normal text-graphite-600 dark:text-graphite-200"
                 >
                   {chip}
                 </span>
@@ -51,7 +51,7 @@ export function Hero() {
               <AccessRequestForm source="landing" variant="hero" />
               <a
                 href="#demo"
-                className="inline-block text-sm font-medium text-graphite-500 transition-colors hover:text-graphite-900"
+                className="inline-block text-sm font-normal text-graphite-500 dark:text-graphite-300 transition-colors hover:text-graphite-900 dark:hover:text-ivory-50"
               >
                 Or try the interactive preview →
               </a>

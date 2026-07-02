@@ -28,7 +28,7 @@ export function LoginForm() {
           <SyftinLogo variant="light" />
         </div>
         <div className="relative">
-          <h2 className="text-3xl font-semibold tracking-tight text-ivory-50">
+          <h2 className="text-3xl font-light tracking-tight text-ivory-50">
             {isContributor ? (
               <>
                 Run a Syftin node,
@@ -56,22 +56,22 @@ export function LoginForm() {
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center bg-ivory-50 px-6 py-12 lg:px-16">
+      <div className="flex flex-1 flex-col justify-center bg-ivory-50 dark:bg-graphite-950 px-6 py-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-8 lg:hidden">
             <SyftinLogo />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-graphite-900">
+          <h1 className="app-page-title text-2xl leading-tight">
             {isContributor ? "Contributor sign in" : "Sign in"}
           </h1>
-          <p className="mt-2 text-sm text-graphite-500">
+          <p className="app-page-lead">
             {isContributor
               ? "We'll email you a secure sign-in link for the contributor portal."
               : "We'll email you a secure sign-in link for the Syftin dashboard."}
           </p>
 
           {initialError && (
-            <p className="mt-4 text-sm text-red-600">{initialError}</p>
+            <p className="mt-4 text-sm text-red-600 dark:text-red-400">{initialError}</p>
           )}
 
           <AccessRequestForm
@@ -81,38 +81,38 @@ export function LoginForm() {
             className="mt-8"
           />
 
-          <p className="mt-8 text-center text-xs leading-relaxed text-graphite-400">
+          <p className="mt-8 text-center text-xs leading-relaxed text-graphite-400 dark:text-graphite-400">
             By continuing, you agree to our{" "}
-            <Link href="/terms" className="text-graphite-500 hover:text-graphite-700">
+            <Link href="/terms" className="text-graphite-500 dark:text-graphite-300 hover:text-graphite-700 dark:hover:text-ivory-50">
               Terms
             </Link>
             ,{" "}
-            <Link href="/dpa" className="text-graphite-500 hover:text-graphite-700">
+            <Link href="/dpa" className="text-graphite-500 dark:text-graphite-300 hover:text-graphite-700 dark:hover:text-ivory-50">
               DPA
             </Link>
             , and{" "}
-            <Link href="/privacy" className="text-graphite-500 hover:text-graphite-700">
+            <Link href="/privacy" className="text-graphite-500 dark:text-graphite-300 hover:text-graphite-700 dark:hover:text-ivory-50">
               Privacy Policy
             </Link>
             .
           </p>
           {isPhase2EnabledClient() && !isContributor && (
-            <p className="mt-4 text-center text-xs text-graphite-400">
+            <p className="mt-4 text-center text-xs text-graphite-400 dark:text-graphite-400">
               Running a worker node?{" "}
               <Link
                 href="/login?next=/contributor"
-                className="font-medium text-emerald-600 hover:text-emerald-500"
+                className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500"
               >
                 Contributor sign in
               </Link>
             </p>
           )}
           {isContributor && (
-            <p className="mt-4 text-center text-xs text-graphite-400">
+            <p className="mt-4 text-center text-xs text-graphite-400 dark:text-graphite-400">
               Need the buyer dashboard?{" "}
               <Link
                 href="/login"
-                className="font-medium text-honey-600 hover:text-honey-500"
+                className="font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
               >
                 Business sign in
               </Link>

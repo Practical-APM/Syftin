@@ -1,7 +1,8 @@
 export function HeroBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      <div className="gradient-radial-light absolute inset-0" />
+      <div className="gradient-radial-dark absolute inset-0 dark:opacity-100 opacity-0" />
+      <div className="gradient-radial-light absolute inset-0 dark:opacity-0 opacity-100" />
       <svg
         className="absolute inset-0 h-full w-full opacity-[0.35]"
         xmlns="http://www.w3.org/2000/svg"
@@ -18,7 +19,7 @@ export function HeroBackground() {
               fill="none"
               stroke="currentColor"
               strokeWidth="0.5"
-              className="text-graphite-900/8"
+              className="text-graphite-900/8 dark:text-ivory-50/6"
             />
           </pattern>
         </defs>

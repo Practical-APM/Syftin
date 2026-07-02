@@ -42,7 +42,7 @@ export const STATUS_COLORS: Record<JobStatus, string> = {
   queued: "bg-blue-500/15 text-blue-600",
   processing: "bg-honey-500/15 text-honey-600",
   validating: "bg-purple-500/15 text-purple-600",
-  completed: "bg-emerald-500/15 text-emerald-600",
+  completed: "bg-honey-500/15 text-honey-600 dark:text-honey-400",
   failed: "bg-red-500/15 text-red-600",
   cancelled: "bg-graphite-500/10 text-graphite-400",
 };

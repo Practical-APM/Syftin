@@ -32,7 +32,7 @@ export function SyftinLogo({
           className={cn(
             "font-semibold tracking-tight",
             size === "sm" ? "text-base" : "text-lg",
-            variant === "dark" ? "text-graphite-900" : "text-ivory-50",
+            variant === "dark" ? "text-graphite-900 dark:text-ivory-50" : "text-ivory-50",
           )}
         >
           Syftin

@@ -19,46 +19,46 @@ export function JobTable({
 }) {
   const visibleJobs = limit != null ? jobs.slice(0, limit) : jobs;
   return (
-    <div className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm">
+    <div className="app-data-table">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-ivory-200 bg-ivory-50/80">
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+          <tr>
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Job
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Domain
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Status
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Field match
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Records
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300">
               Created
             </th>
-            <th className="px-5 py-3 text-xs font-medium text-graphite-500" />
+            <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-300" />
           </tr>
         </thead>
         <tbody>
           {visibleJobs.map((job) => (
             <tr
               key={job.id}
-              className="border-b border-ivory-100 last:border-0 transition-colors hover:bg-ivory-50/60"
+              className="last:border-0"
             >
               <td className="px-5 py-3.5">
                 <Link
                   href={`/dashboard/jobs/${job.id}`}
-                  className="font-medium text-graphite-900 hover:text-honey-600"
+                  className="font-medium text-graphite-900 dark:text-ivory-50 hover:text-honey-600 dark:hover:text-honey-400"
                 >
                   {job.name}
                 </Link>
               </td>
-              <td className="px-5 py-3.5 font-mono text-xs text-graphite-500">
+              <td className="px-5 py-3.5 font-mono text-xs text-graphite-500 dark:text-graphite-300">
                 {job.domain}
               </td>
               <td className="px-5 py-3.5">
@@ -71,22 +71,22 @@ export function JobTable({
                   {STATUS_LABELS[job.status]}
                 </span>
               </td>
-              <td className="px-5 py-3.5 text-graphite-900">
+              <td className="px-5 py-3.5 text-graphite-900 dark:text-ivory-50">
                 {hasComplianceScore(job.compliance_score)
                   ? formatComplianceScore(job.compliance_score)
                   : "—"}
               </td>
-              <td className="px-5 py-3.5 text-graphite-500">
+              <td className="px-5 py-3.5 text-graphite-500 dark:text-graphite-300">
                 {job.record_count?.toLocaleString() ?? "—"}
               </td>
-              <td className="px-5 py-3.5 text-graphite-500">
+              <td className="px-5 py-3.5 text-graphite-500 dark:text-graphite-300">
                 {formatDate(job.created_at)}
               </td>
               <td className="px-5 py-3.5">
                 {job.status === "completed" && showDownloadAction ? (
                   <a
                     href={jobDownloadUrl(job)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-honey-600 hover:text-honey-500"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
                   >
                     <ArrowDownToLine className="h-3.5 w-3.5" />
                     JSON
@@ -94,7 +94,7 @@ export function JobTable({
                 ) : (
                   <Link
                     href={`/dashboard/jobs/${job.id}`}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-graphite-500 hover:text-graphite-900"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-graphite-500 dark:text-graphite-300 hover:text-graphite-900 dark:hover:text-ivory-50"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     View

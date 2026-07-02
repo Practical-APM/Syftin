@@ -28,7 +28,7 @@ export function TrustStrip() {
   return (
     <section
       aria-label="Platform highlights"
-      className="border-y border-ivory-200 bg-white/60 py-5 backdrop-blur-sm"
+      className="border-y border-ivory-200 dark:border-graphite-800 bg-white/60 dark:bg-graphite-900/40 py-5 backdrop-blur-sm"
     >
       <div className="marketing-container py-8">
         <FadeIn>
@@ -37,15 +37,15 @@ export function TrustStrip() {
               <li key={item.label} className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-honey-500/10">
                   <item.icon
-                    className="h-4 w-4 text-honey-600"
+                    className="h-4 w-4 text-honey-600 dark:text-honey-400"
                     strokeWidth={1.5}
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-graphite-900">
+                  <p className="text-sm font-medium text-graphite-900 dark:text-ivory-50">
                     {item.label}
                   </p>
-                  <p className="mt-0.5 text-xs text-graphite-500">
+                  <p className="mt-0.5 text-xs text-graphite-500 dark:text-graphite-300">
                     {item.detail}
                   </p>
                 </div>

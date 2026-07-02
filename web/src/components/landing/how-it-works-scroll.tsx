@@ -8,7 +8,7 @@ export function HowItWorksScroll() {
     <section id="how-it-works" className="marketing-section bg-graphite-950">
       <div className="marketing-container">
         <FadeIn>
-          <h2 className="text-3xl font-semibold tracking-tight text-ivory-50 sm:text-4xl">
+          <h2 className="marketing-title text-3xl sm:text-4xl">
             From request to ready.
           </h2>
         </FadeIn>
@@ -17,10 +17,10 @@ export function HowItWorksScroll() {
           {PIPELINE_STAGES.map((stage, i) => (
             <FadeIn key={stage.id} delay={i * 0.04}>
               <div className="rounded-2xl border border-graphite-800 bg-graphite-900/60 p-6 transition-colors hover:border-honey-500/40">
-                <span className="font-mono text-sm text-honey-500">
+                <span className="font-mono text-sm text-honey-400">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="mt-2 text-lg font-semibold text-ivory-50">
+                <h3 className="mt-2 text-lg font-medium text-ivory-50">
                   {stage.label}
                 </h3>
                 <div className="mt-4 h-0.5 rounded-full bg-honey-500/30" />

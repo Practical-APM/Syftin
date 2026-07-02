@@ -64,7 +64,7 @@ export function DashboardOverview({ initialJobs }: DashboardOverviewProps) {
           {jobs.length > RECENT_JOBS_LIMIT && (
             <Link
               href="/dashboard/jobs"
-              className="inline-flex items-center gap-1 text-xs font-medium text-honey-600 hover:text-honey-500"
+              className="inline-flex items-center gap-1 text-xs font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
             >
               View all {jobs.length} jobs
               <ArrowRight className="h-3.5 w-3.5" />

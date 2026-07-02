@@ -16,10 +16,10 @@ export function ComplianceSection() {
         <FadeIn>
           <div className="flex flex-col items-center gap-10 lg:flex-row lg:justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-ivory-50 sm:text-3xl">
+              <h2 className="marketing-title text-2xl sm:text-3xl">
                 Trust built in
               </h2>
-              <p className="mt-2 max-w-md text-sm text-graphite-400">
+              <p className="marketing-lead mt-2 max-w-md">
                 Approved public sites only. Written terms, DPA available, and
                 PII screened before every delivery. Syftin is your data
                 processor — your team stays in control.

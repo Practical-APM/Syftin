@@ -21,13 +21,13 @@ const sampleJson = `[
 
 export function DashboardOnboarding() {
   return (
-    <div className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-900 shadow-sm">
       <div className="grid lg:grid-cols-2">
-        <div className="flex flex-col justify-center p-8 sm:p-10 lg:p-12">
-          <p className="text-xs font-medium uppercase tracking-wider text-honey-600">
+        <div className="flex flex-col justify-center p-8 sm:p-10 lg:p-12 dark:bg-graphite-900">
+          <p className="text-xs font-medium uppercase tracking-wider text-honey-600 dark:text-honey-400">
             Get started
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-graphite-900 sm:text-[1.65rem]">
+          <h2 className="marketing-title mt-2 text-2xl sm:text-[1.65rem]">
             Your first dataset is three steps away
           </h2>
 
@@ -41,9 +41,9 @@ export function DashboardOnboarding() {
                 className="flex items-center gap-3"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10">
-                  <step.icon className="h-4 w-4 text-honey-600" />
+                  <step.icon className="h-4 w-4 text-honey-600 dark:text-honey-400" />
                 </span>
-                <span className="text-sm font-medium text-graphite-700">
+                <span className="text-sm font-normal text-graphite-700 dark:text-graphite-200">
                   {step.label}
                 </span>
               </motion.li>
@@ -71,7 +71,7 @@ export function DashboardOnboarding() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="overflow-x-auto rounded-lg border border-graphite-800 bg-graphite-900 p-4 font-mono text-[11px] leading-relaxed text-emerald-400/90"
+            className="overflow-x-auto rounded-lg border border-graphite-800 bg-graphite-900 p-4 font-mono text-[11px] leading-relaxed text-honey-400/90"
           >
             {sampleJson}
           </motion.pre>

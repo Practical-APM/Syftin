@@ -129,28 +129,32 @@ export function DashboardHeader({
   title,
   description,
   action,
+  backHref,
+  backLabel = "Back",
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  backHref?: string;
+  backLabel?: string;
 }) {
   return (
-    <header className="shrink-0 border-b border-ivory-200 bg-ivory-50/95 backdrop-blur-sm">
+    <header className="shrink-0 border-b border-ivory-200 dark:border-graphite-800 bg-ivory-50/95 dark:bg-graphite-950/95 backdrop-blur-sm">
       <div
-        className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 lg:px-8"
+        className="mx-auto flex max-w-6xl items-start justify-between gap-4 px-6 py-6 lg:px-8 lg:py-7"
         style={{ maxWidth: "var(--app-content-max)" }}
       >
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold tracking-tight text-graphite-900">
-            {title}
-          </h1>
-          {description && (
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-graphite-500">
-              {description}
-            </p>
+          {backHref && (
+            <Link href={backHref} className="app-back-link">
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              {backLabel}
+            </Link>
           )}
+          <h1 className="app-page-title">{title}</h1>
+          {description && <p className="app-page-lead">{description}</p>}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        {action && <div className="shrink-0 pt-1">{action}</div>}
       </div>
     </header>
   );

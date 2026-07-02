@@ -45,7 +45,7 @@ export function FieldLabel({
   return (
     <label
       htmlFor={htmlFor}
-      className={cn("block text-sm font-medium text-graphite-900", className)}
+      className={cn("block text-sm font-medium text-graphite-900 dark:text-ivory-50", className)}
     >
       {children}
     </label>
@@ -60,7 +60,7 @@ export function FieldHint({
   className?: string;
 }) {
   return (
-    <p className={cn("mt-0.5 text-xs text-graphite-500", className)}>
+    <p className={cn("mt-0.5 text-xs text-graphite-500 dark:text-graphite-300", className)}>
       {children}
     </p>
   );

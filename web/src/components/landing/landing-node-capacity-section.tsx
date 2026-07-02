@@ -12,27 +12,26 @@ export function LandingNodeCapacitySection() {
   return (
     <section
       id="node-calculator"
-      className="marketing-section border-y border-ivory-200 bg-ivory-100/40"
+      className="marketing-section border-y border-ivory-200 dark:border-graphite-800 bg-ivory-100/40 dark:bg-graphite-900/30"
     >
       <div className="marketing-container">
         <div className="grid items-start gap-12 lg:grid-cols-2">
           <FadeIn>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-graphite-500">
+            <p className="marketing-eyebrow">
               Contributor estimator
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+            <h2 className="marketing-title mt-3 text-3xl sm:text-4xl">
               Check your laptop&apos;s earning potential
             </h2>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed text-graphite-500">
+            <p className="marketing-lead mt-4 max-w-lg">
               No download required. Pick your OS and RAM, set daily uptime, and
               see your likely Scout / Ranger / Titan tier. Eco mode and thermal
               PID throttling keep your machine cool while you earn.
             </p>
-            <Link
-              href="/login?next=/contributor"
-              className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-            >
-              Contributor sign in
+            <Link href="/login?next=/contributor" className="mt-6 inline-block">
+              <span className="inline-flex h-10 items-center justify-center rounded-lg bg-honey-500 px-4 text-sm font-medium text-graphite-950 transition-colors hover:bg-honey-400">
+                Contributor sign in
+              </span>
             </Link>
           </FadeIn>
 

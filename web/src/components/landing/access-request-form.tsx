@@ -44,7 +44,7 @@ export function AccessRequestForm({
           "rounded-xl border p-4",
           isCta
             ? "border-graphite-700 bg-graphite-800/60 text-left"
-            : "border-ivory-200 bg-white text-left shadow-sm",
+            : "border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-900 text-left shadow-sm",
           className,
         )}
       >
@@ -59,7 +59,7 @@ export function AccessRequestForm({
             <p
               className={cn(
                 "text-sm font-medium",
-                isCta ? "text-ivory-50" : "text-graphite-900",
+                isCta ? "text-ivory-50" : "text-graphite-900 dark:text-ivory-50",
               )}
             >
               {canUseMagicLink ? "Check your email" : "You're on the list"}
@@ -67,7 +67,7 @@ export function AccessRequestForm({
             <p
               className={cn(
                 "mt-1 text-sm",
-                isCta ? "text-graphite-400" : "text-graphite-500",
+                isCta ? "text-graphite-400" : "text-graphite-500 dark:text-graphite-300",
               )}
             >
               {canUseMagicLink
@@ -101,7 +101,7 @@ export function AccessRequestForm({
         <div>
           <label
             htmlFor="access-email-login"
-            className="block text-sm font-medium text-graphite-900"
+            className="block text-sm font-medium text-graphite-900 dark:text-ivory-50"
           >
             Work email
           </label>
@@ -112,7 +112,7 @@ export function AccessRequestForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
-            className="mt-1.5 w-full rounded-lg border border-ivory-200 bg-white px-3.5 py-2.5 text-sm text-graphite-900 placeholder:text-graphite-400 focus:border-honey-500/50 focus:outline-none focus:ring-2 focus:ring-honey-500/15"
+            className="mt-1.5 w-full rounded-lg border border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-950 px-3.5 py-2.5 text-sm text-graphite-900 dark:text-ivory-50 placeholder:text-graphite-400 dark:placeholder:text-graphite-500 focus:border-honey-500/50 focus:outline-none focus:ring-2 focus:ring-honey-500/15"
           />
         </div>
       ) : (
@@ -136,7 +136,7 @@ export function AccessRequestForm({
               "min-w-0 flex-1 rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2",
               isCta
                 ? "border-graphite-700 bg-graphite-950 text-ivory-50 placeholder:text-graphite-500 focus:border-honey-500/50 focus:ring-honey-500/15"
-                : "border-ivory-200 bg-white text-graphite-900 placeholder:text-graphite-400 focus:border-honey-500/50 focus:ring-honey-500/15",
+                : "border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-950 text-graphite-900 dark:text-ivory-50 placeholder:text-graphite-400 dark:placeholder:text-graphite-500 focus:border-honey-500/50 focus:ring-honey-500/15",
             )}
           />
           <Button
@@ -190,7 +190,7 @@ export function AccessRequestForm({
         <p
           className={cn(
             "mt-2 text-xs",
-            isCta ? "text-graphite-500" : "text-graphite-400",
+            isCta ? "text-graphite-500" : "text-graphite-400 dark:text-graphite-400",
           )}
         >
           Work email for buyer access.{" "}
@@ -198,7 +198,7 @@ export function AccessRequestForm({
             href="#who-its-for"
             className={cn(
               "font-medium underline-offset-2 hover:underline",
-              isCta ? "text-graphite-400" : "text-graphite-500",
+              isCta ? "text-graphite-400" : "text-graphite-500 dark:text-graphite-300",
             )}
           >
             Contributors

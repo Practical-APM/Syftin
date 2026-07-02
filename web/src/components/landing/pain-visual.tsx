@@ -30,7 +30,7 @@ export function PainVisual() {
     <section id="why-syftin" className="marketing-section bg-graphite-900">
       <div className="marketing-container">
         <FadeIn>
-          <h2 className="text-center text-3xl font-semibold tracking-tight text-ivory-50 sm:text-4xl">
+          <h2 className="marketing-title text-center text-3xl sm:text-4xl">
             Web data should arrive{" "}
             <span className="text-honey-400">clean</span>, not copied by hand.
           </h2>

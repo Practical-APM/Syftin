@@ -47,7 +47,7 @@ const features = [
         {APPROVED_DOMAINS_SAMPLE.map((d) => (
           <span
             key={d}
-            className="rounded-lg border border-ivory-200 bg-ivory-50 px-2.5 py-1 font-mono text-[11px] text-graphite-600"
+            className="rounded-lg border border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-900/80 px-2.5 py-1 font-mono text-[11px] text-graphite-600 dark:text-graphite-200"
           >
             {d}
           </span>
@@ -135,10 +135,10 @@ export function BentoFeatures() {
     <section id="features" className="marketing-section">
       <div className="marketing-container">
         <FadeIn>
-          <h2 className="text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+          <h2 className="marketing-title text-3xl sm:text-4xl">
             Everything in one workflow
           </h2>
-          <p className="mt-3 text-sm text-graphite-500">
+          <p className="marketing-lead">
             Click a feature to see how it maps to the product.
           </p>
         </FadeIn>
@@ -154,18 +154,18 @@ export function BentoFeatures() {
                     onClick={() => setActive(item.id)}
                     className={`flex h-full w-full flex-col rounded-2xl border p-7 text-left transition-all ${
                       isActive
-                        ? "border-honey-500/40 bg-white shadow-md shadow-honey-500/5"
-                        : "border-ivory-200 bg-ivory-50 hover:border-ivory-300 hover:shadow-sm"
+                        ? "border-honey-500/40 bg-white dark:bg-graphite-900 shadow-md shadow-honey-500/5"
+                        : "border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-900/50 hover:border-ivory-300 dark:hover:border-graphite-600 hover:shadow-sm"
                     }`}
                   >
                     <item.icon
-                      className={`h-5 w-5 ${isActive ? "text-honey-600" : "text-graphite-500"}`}
+                      className={`h-5 w-5 ${isActive ? "text-honey-600 dark:text-honey-400" : "text-graphite-500 dark:text-graphite-400"}`}
                       strokeWidth={1.5}
                     />
-                    <h3 className="mt-4 font-semibold text-graphite-900">
+                    <h3 className="mt-4 font-medium text-graphite-900 dark:text-ivory-50">
                       {item.title}
                     </h3>
-                    <p className="mt-1 text-xs text-graphite-500">
+                    <p className="mt-1 text-xs font-normal text-graphite-500 dark:text-graphite-300">
                       {item.summary}
                     </p>
                     <AnimatePresence>
@@ -174,8 +174,7 @@ export function BentoFeatures() {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-2 text-xs leading-relaxed text-graphite-600"
-                        >
+                          className="mt-2 text-xs leading-relaxed font-normal text-graphite-600 dark:text-graphite-200">
                           {item.detail}
                         </motion.p>
                       )}

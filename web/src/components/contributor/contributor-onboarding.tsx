@@ -39,10 +39,10 @@ export function ContributorOnboarding({
           <p className="text-xs font-medium uppercase tracking-wider text-emerald-700">
             Getting started
           </p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-graphite-900">
+          <h2 className="marketing-title mt-2 text-xl">
             Plug in your laptop in 4 steps
           </h2>
-          <p className="mt-2 text-sm text-graphite-600">
+          <p className="marketing-lead mt-2">
             No coding required. Copy one command, run it, and start earning from
             approved public-page fetches.
           </p>

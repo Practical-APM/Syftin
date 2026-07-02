@@ -16,19 +16,19 @@ export function FaqSection() {
     <section id="faq" className="marketing-section">
       <div className="marketing-container-narrow">
         <FadeIn>
-          <p className="text-center text-xs font-medium uppercase tracking-[0.2em] text-graphite-500">
+          <p className="marketing-eyebrow text-center">
             FAQ
           </p>
-          <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+          <h2 className="marketing-title mt-3 text-center text-3xl sm:text-4xl">
             Common questions
           </h2>
-          <p className="mt-3 text-center text-sm text-graphite-500">
+          <p className="marketing-lead text-center">
             Straight answers for buyers, contributors, and anyone evaluating
             Syftin.
           </p>
         </FadeIn>
 
-        <div className="mt-10 divide-y divide-ivory-200 rounded-2xl border border-ivory-200 bg-ivory-50">
+        <div className="mt-10 divide-y divide-ivory-200 dark:divide-graphite-700 rounded-2xl border border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-900">
           {faqs.map((faq, i) => {
             const isOpen = openIndex === i;
             return (
@@ -40,11 +40,11 @@ export function FaqSection() {
                     className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-sm font-medium text-graphite-900">
+                    <span className="text-sm font-medium text-graphite-900 dark:text-ivory-50">
                       {faq.question}
                     </span>
                     <ChevronDown
-                      className={`mt-0.5 h-4 w-4 shrink-0 text-graphite-400 transition-transform ${
+                      className={`mt-0.5 h-4 w-4 shrink-0 text-graphite-400 dark:text-graphite-300 transition-transform ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -58,7 +58,7 @@ export function FaqSection() {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <p className="px-5 pb-4 text-sm leading-relaxed text-graphite-500">
+                        <p className="px-5 pb-4 text-sm leading-relaxed text-graphite-500 dark:text-graphite-200">
                           {faq.answer}
                         </p>
                       </motion.div>

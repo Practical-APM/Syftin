@@ -63,16 +63,16 @@ const personas = [
 
 export function PersonasSection() {
   return (
-    <section id="who-its-for" className="marketing-section border-y border-ivory-200 bg-ivory-100/40">
+    <section id="who-its-for" className="marketing-section border-y border-ivory-200 dark:border-graphite-700 bg-ivory-100/40 dark:bg-graphite-900/30">
       <div className="marketing-container">
         <FadeIn>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-graphite-500">
+          <p className="marketing-eyebrow">
             Who it&apos;s for
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+          <h2 className="marketing-title mt-3 text-3xl sm:text-4xl">
             Three audiences, one platform
           </h2>
-          <p className="mt-3 max-w-2xl text-sm text-graphite-500">
+          <p className="marketing-lead max-w-2xl">
             Whether you need datasets for your team, run a contributor device,
             or just want to understand what Syftin does — start here.
           </p>
@@ -83,30 +83,42 @@ export function PersonasSection() {
             <FadeIn key={persona.id} delay={i * 0.05}>
               <HoverLift className="h-full">
                 <article
-                  className={`flex h-full flex-col rounded-2xl border p-6 ${persona.accent}`}
+                  className={`flex h-full flex-col rounded-2xl border p-6 ${
+                    persona.id === "buyer"
+                      ? "border-honey-500/30 bg-honey-500/5 dark:border-honey-500/25 dark:bg-honey-500/10"
+                      : persona.id === "contributor"
+                      ? "border-emerald-500/25 bg-emerald-500/5 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+                      : "border-ivory-200 bg-ivory-50 dark:border-graphite-700 dark:bg-graphite-900/50"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 dark:bg-graphite-800/80 shadow-sm">
                       <persona.icon
-                        className={`h-5 w-5 ${persona.iconColor}`}
+                        className={`h-5 w-5 ${
+                          persona.id === "buyer"
+                            ? "text-honey-600 dark:text-honey-400"
+                            : persona.id === "contributor"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-graphite-600 dark:text-graphite-300"
+                        }`}
                         strokeWidth={1.5}
                       />
                     </div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-graphite-500">
+                    <p className="text-xs font-normal uppercase tracking-wider text-graphite-500 dark:text-graphite-300">
                       {persona.audience}
                     </p>
                   </div>
-                  <h3 className="mt-5 text-lg font-semibold text-graphite-900">
+                  <h3 className="mt-5 text-lg font-medium text-graphite-900 dark:text-ivory-50">
                     {persona.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-graphite-500">
+                  <p className="mt-2 text-sm leading-relaxed font-normal text-graphite-500 dark:text-graphite-300">
                     {persona.description}
                   </p>
                   <ul className="mt-5 flex-1 space-y-2">
                     {persona.bullets.map((bullet) => (
                       <li
                         key={bullet}
-                        className="flex gap-2 text-sm text-graphite-600"
+                        className="flex gap-2 text-sm font-normal text-graphite-600 dark:text-graphite-200"
                       >
                         <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-honey-500" />
                         {bullet}

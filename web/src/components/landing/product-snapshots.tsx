@@ -621,13 +621,13 @@ export function ProductSnapshots() {
     <section id="product" className="marketing-section">
       <div className="marketing-container">
         <FadeIn>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-graphite-500">
+          <p className="marketing-eyebrow">
             Inside the product
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-graphite-900 sm:text-4xl">
+          <h2 className="marketing-title mt-3 text-3xl sm:text-4xl">
             See what you get — by role
           </h2>
-          <p className="mt-3 max-w-2xl text-sm text-graphite-500">
+          <p className="marketing-lead max-w-2xl">
             Illustrative previews built from the live dashboard and contributor
             portal. Sample data only — your workspace will show your own jobs
             and devices.
@@ -636,7 +636,7 @@ export function ProductSnapshots() {
 
         {phase2 && (
           <FadeIn delay={0.04} className="mt-8">
-            <div className="inline-flex rounded-xl border border-ivory-200 bg-ivory-100/60 p-1">
+            <div className="inline-flex rounded-xl border border-ivory-200 dark:border-graphite-700 bg-ivory-100/60 dark:bg-graphite-900/60 p-1">
               {(
                 [
                   { id: "buyer" as const, label: "Business teams" },
@@ -649,8 +649,8 @@ export function ProductSnapshots() {
                   onClick={() => switchPersona(tab.id)}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                     persona === tab.id
-                      ? "bg-white text-graphite-900 shadow-sm"
-                      : "text-graphite-500 hover:text-graphite-700"
+                      ? "bg-white dark:bg-graphite-800 text-graphite-900 dark:text-ivory-50 shadow-sm"
+                      : "text-graphite-500 dark:text-graphite-300 hover:text-graphite-700 dark:hover:text-ivory-50"
                   }`}
                 >
                   {tab.label}
@@ -672,8 +672,8 @@ export function ProductSnapshots() {
                 onClick={() => setActiveId(tab.id)}
                 className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
                   activeId === tab.id
-                    ? "border-honey-500/40 bg-honey-500/10 text-honey-700"
-                    : "border-ivory-200 bg-ivory-50 text-graphite-500 hover:border-ivory-300"
+                    ? "border-honey-500/40 bg-honey-500/10 text-honey-700 dark:text-honey-400"
+                    : "border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-900/50 text-graphite-500 dark:text-graphite-300 hover:border-ivory-300 dark:hover:border-graphite-600"
                 }`}
               >
                 {tab.label}
@@ -693,7 +693,7 @@ export function ProductSnapshots() {
             >
               {active && <SnapshotView id={active.id} />}
               {active && (
-                <p className="mt-4 text-sm leading-relaxed text-graphite-500">
+                <p className="mt-4 text-sm leading-relaxed text-graphite-500 dark:text-graphite-300">
                   {active.caption}
                 </p>
               )}

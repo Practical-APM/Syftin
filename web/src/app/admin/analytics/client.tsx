@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, RefreshCw, TrendingUp, Globe, Cpu, CreditCard, Layers } from "lucide-react";
-import Link from "next/link";
+import { RefreshCw, TrendingUp, Globe, Cpu, CreditCard, Layers } from "lucide-react";
+import { DashboardHeader, DashboardPage } from "@/components/dashboard/sidebar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ type AnalyticsData = {
 
 // ─── Chart helpers ────────────────────────────────────────────────────────────
 
-function Sparkline({ data, color = "#6366f1" }: { data: number[]; color?: string }) {
+function Sparkline({ data, color = "#d4a053" }: { data: number[]; color?: string }) {
   if (!data.length) return null;
   const max = Math.max(...data, 1);
   const w = 100;
@@ -52,7 +52,7 @@ function Sparkline({ data, color = "#6366f1" }: { data: number[]; color?: string
 function HBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div className="h-2 w-full rounded-full bg-neutral-800/60">
+    <div className="h-2 w-full rounded-full bg-graphite-800/60">
       <div
         className="h-2 rounded-full transition-all duration-500"
         style={{ width: `${pct}%`, backgroundColor: color }}
@@ -81,11 +81,11 @@ function StatCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+    <div className="rounded-xl border border-graphite-700 bg-graphite-900/50 p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">{title}</p>
-          <p className="mt-0.5 text-[11px] text-neutral-600">{subtitle}</p>
+          <p className="text-xs font-medium uppercase tracking-widest text-graphite-400">{title}</p>
+          <p className="mt-0.5 text-[11px] text-graphite-500">{subtitle}</p>
         </div>
         <div
           className="flex h-8 w-8 items-center justify-center rounded-lg"
@@ -127,48 +127,42 @@ export function AnalyticsClient() {
   const maxLatency = Math.max(...(data?.domain_latency.map((d) => d.p95) ?? [1]));
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center text-sm text-neutral-400 hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Admin
-          </Link>
-          <h1 className="text-3xl font-light tracking-tight text-white">Platform Analytics</h1>
-          <p className="mt-2 text-sm text-neutral-400">
-            Node health, extraction latency, failure rates, credit burn, and batch throughput.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 mt-10">
-          <div className="flex rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
-            {(["7d", "30d"] as Range[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                  range === r
-                    ? "bg-indigo-600 text-white"
-                    : "text-neutral-400 hover:text-white"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+    <>
+      <DashboardHeader
+        backHref="/admin"
+        backLabel="Back to Admin"
+        title="Platform Analytics"
+        description="Node health, extraction latency, failure rates, credit burn, and batch throughput."
+        action={
+          <div className="flex items-center gap-2">
+            <div className="flex overflow-hidden rounded-lg border border-graphite-700 bg-graphite-900">
+              {(["7d", "30d"] as Range[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRange(r)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    range === r
+                      ? "bg-honey-500 text-graphite-950"
+                      : "text-graphite-400 hover:text-ivory-50"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={load}
+              className="flex items-center gap-1.5 rounded-lg border border-graphite-700 bg-graphite-900 px-3 py-1.5 text-xs text-graphite-400 transition-colors hover:text-ivory-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           </div>
-          <button
-            onClick={load}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-400 transition-colors hover:text-white"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        }
+      />
+      <DashboardPage className="max-w-7xl space-y-8">
 
       {error && (
         <div className="rounded-lg border border-red-800/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -179,7 +173,7 @@ export function AnalyticsClient() {
       {loading && !data ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl border border-neutral-800 bg-neutral-900/40" />
+            <div key={i} className="h-48 animate-pulse rounded-xl border border-graphite-700 bg-graphite-900/40" />
           ))}
         </div>
       ) : data ? (
@@ -192,22 +186,22 @@ export function AnalyticsClient() {
               title="Node Health"
               subtitle="Online contributor nodes per day"
               icon={Cpu}
-              accent="#6366f1"
+              accent="#d4a053"
             >
               <div className="space-y-2">
                 <div className="h-24">
-                  <Sparkline data={data.node_count_timeline.map((d) => d.value)} color="#6366f1" />
+                  <Sparkline data={data.node_count_timeline.map((d) => d.value)} color="#d4a053" />
                 </div>
-                <div className="flex justify-between text-[10px] text-neutral-600 mt-1">
+                <div className="mt-1 flex justify-between text-[10px] text-graphite-500">
                   {data.node_count_timeline
                     .filter((_, i) => i % Math.ceil(data.node_count_timeline.length / 5) === 0)
                     .map((d) => (
                       <span key={d.date}>{d.date.slice(5)}</span>
                     ))}
                 </div>
-                <p className="text-lg font-light text-white">
+                <p className="text-lg font-light text-ivory-50">
                   {data.node_count_timeline.at(-1)?.value ?? 0}{" "}
-                  <span className="text-sm text-neutral-500">nodes today</span>
+                  <span className="text-sm text-graphite-400">nodes today</span>
                 </p>
               </div>
             </StatCard>
@@ -217,27 +211,26 @@ export function AnalyticsClient() {
               title="Batch Throughput"
               subtitle="Shards created / completed / failed per day"
               icon={Layers}
-              accent="#10b981"
+              accent="#d4a053"
             >
               <div className="space-y-2">
-                <div className="h-24 relative">
-                  {/* Stacked sparklines */}
-                  <Sparkline data={data.batch_throughput.map((d) => d.created)} color="#6b7280" />
+                <div className="relative h-24">
+                  <Sparkline data={data.batch_throughput.map((d) => d.created)} color="#6b6b70" />
                   <div className="absolute inset-0">
-                    <Sparkline data={data.batch_throughput.map((d) => d.completed)} color="#10b981" />
+                    <Sparkline data={data.batch_throughput.map((d) => d.completed)} color="#d4a053" />
                   </div>
                   <div className="absolute inset-0">
                     <Sparkline data={data.batch_throughput.map((d) => d.failed)} color="#ef4444" />
                   </div>
                 </div>
-                <div className="flex gap-4 text-xs text-neutral-500 mt-1">
-                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-neutral-500" />Created</span>
-                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />Completed</span>
+                <div className="mt-1 flex gap-4 text-xs text-graphite-400">
+                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-graphite-500" />Created</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-honey-500" />Completed</span>
                   <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500" />Failed</span>
                 </div>
-                <p className="text-lg font-light text-white">
+                <p className="text-lg font-light text-ivory-50">
                   {data.batch_throughput.reduce((s, d) => s + d.completed, 0)}{" "}
-                  <span className="text-sm text-neutral-500">shards completed</span>
+                  <span className="text-sm text-graphite-400">shards completed</span>
                 </p>
               </div>
             </StatCard>
@@ -251,22 +244,22 @@ export function AnalyticsClient() {
               title="Extraction Latency"
               subtitle="P50 / P95 per domain"
               icon={TrendingUp}
-              accent="#f59e0b"
+              accent="#e8b86a"
             >
               <div className="space-y-3">
                 {data.domain_latency.slice(0, 6).map((d) => (
                   <div key={d.domain}>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-mono text-neutral-300 truncate max-w-[120px]">{d.domain}</span>
-                      <span className="text-neutral-500 shrink-0 ml-2">
-                        {formatMs(d.p50)} / <span className="text-amber-400">{formatMs(d.p95)}</span>
+                    <div className="mb-1 flex justify-between text-[11px]">
+                      <span className="max-w-[120px] truncate font-mono text-graphite-300">{d.domain}</span>
+                      <span className="ml-2 shrink-0 text-graphite-400">
+                        {formatMs(d.p50)} / <span className="text-honey-400">{formatMs(d.p95)}</span>
                       </span>
                     </div>
-                    <HBar value={d.p95} max={maxLatency} color="#f59e0b" />
+                    <HBar value={d.p95} max={maxLatency} color="#e8b86a" />
                   </div>
                 ))}
                 {!data.domain_latency.length && (
-                  <p className="text-xs text-neutral-600 text-center py-4">No latency data yet</p>
+                  <p className="py-4 text-center text-xs text-graphite-500">No latency data yet</p>
                 )}
               </div>
             </StatCard>
@@ -281,17 +274,17 @@ export function AnalyticsClient() {
               <div className="space-y-3">
                 {data.domain_failure_rates.slice(0, 6).map((d) => (
                   <div key={d.domain}>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-mono text-neutral-300 truncate max-w-[120px]">{d.domain}</span>
-                      <span className={`shrink-0 ml-2 font-medium ${d.failure_rate > 10 ? "text-red-400" : d.failure_rate > 5 ? "text-amber-400" : "text-emerald-400"}`}>
+                    <div className="mb-1 flex justify-between text-[11px]">
+                      <span className="max-w-[120px] truncate font-mono text-graphite-300">{d.domain}</span>
+                      <span className={`ml-2 shrink-0 font-medium ${d.failure_rate > 10 ? "text-red-400" : d.failure_rate > 5 ? "text-honey-400" : "text-graphite-300"}`}>
                         {d.failure_rate}%
                       </span>
                     </div>
-                    <HBar value={d.failure_rate} max={Math.max(maxFailRate, 20)} color={d.failure_rate > 10 ? "#ef4444" : d.failure_rate > 5 ? "#f59e0b" : "#10b981"} />
+                    <HBar value={d.failure_rate} max={Math.max(maxFailRate, 20)} color={d.failure_rate > 10 ? "#ef4444" : d.failure_rate > 5 ? "#e8b86a" : "#85858a"} />
                   </div>
                 ))}
                 {!data.domain_failure_rates.length && (
-                  <p className="text-xs text-neutral-600 text-center py-4">No failure data yet</p>
+                  <p className="py-4 text-center text-xs text-graphite-500">No failure data yet</p>
                 )}
               </div>
             </StatCard>
@@ -301,43 +294,43 @@ export function AnalyticsClient() {
               title="Credit Burn"
               subtitle="Buyer spend by organization"
               icon={CreditCard}
-              accent="#8b5cf6"
+              accent="#d4a053"
             >
               <div className="space-y-3">
                 {data.credit_burn_by_org.slice(0, 6).map((o) => (
                   <div key={o.org_id}>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-neutral-300 truncate max-w-[120px]">{o.org_name}</span>
-                      <span className="shrink-0 ml-2 text-violet-400">₹{o.spend_rupees}</span>
+                    <div className="mb-1 flex justify-between text-[11px]">
+                      <span className="max-w-[120px] truncate text-graphite-300">{o.org_name}</span>
+                      <span className="ml-2 shrink-0 text-honey-400">₹{o.spend_rupees}</span>
                     </div>
-                    <HBar value={o.spend_paise} max={maxBurn} color="#8b5cf6" />
+                    <HBar value={o.spend_paise} max={maxBurn} color="#d4a053" />
                   </div>
                 ))}
                 {!data.credit_burn_by_org.length && (
-                  <p className="text-xs text-neutral-600 text-center py-4">No credit transactions yet</p>
+                  <p className="py-4 text-center text-xs text-graphite-500">No credit transactions yet</p>
                 )}
               </div>
             </StatCard>
           </div>
 
           {/* Batch details table */}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
-            <div className="px-5 py-3 border-b border-neutral-800 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-neutral-300">Daily Batch Summary</h2>
-              <span className="text-xs text-neutral-600">Last {range}</span>
+          <div className="app-data-table">
+            <div className="flex items-center justify-between border-b border-graphite-700 px-5 py-3">
+              <h2 className="text-sm font-normal text-graphite-300">Daily Batch Summary</h2>
+              <span className="text-xs text-graphite-500">Last {range}</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="text-neutral-500 uppercase tracking-wider border-b border-neutral-800/60">
+              <table className="w-full text-left text-xs">
+                <thead>
                   <tr>
-                    <th className="px-5 py-3">Date</th>
-                    <th className="px-5 py-3 text-right">Created</th>
-                    <th className="px-5 py-3 text-right text-emerald-500">Completed</th>
-                    <th className="px-5 py-3 text-right text-red-500">Failed</th>
-                    <th className="px-5 py-3 text-right text-neutral-500">Success %</th>
+                    <th className="px-5 py-3 font-medium uppercase tracking-wider text-graphite-400">Date</th>
+                    <th className="px-5 py-3 text-right font-medium uppercase tracking-wider text-graphite-400">Created</th>
+                    <th className="px-5 py-3 text-right font-medium uppercase tracking-wider text-honey-400">Completed</th>
+                    <th className="px-5 py-3 text-right font-medium uppercase tracking-wider text-red-400">Failed</th>
+                    <th className="px-5 py-3 text-right font-medium uppercase tracking-wider text-graphite-400">Success %</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-800/40">
+                <tbody>
                   {data.batch_throughput
                     .slice()
                     .reverse()
@@ -346,18 +339,18 @@ export function AnalyticsClient() {
                         ? Math.round((row.completed / row.created) * 100)
                         : null;
                       return (
-                        <tr key={row.date} className="hover:bg-neutral-800/30 transition-colors">
-                          <td className="px-5 py-3 font-mono text-neutral-400">{row.date}</td>
-                          <td className="px-5 py-3 text-right text-neutral-300">{row.created}</td>
-                          <td className="px-5 py-3 text-right text-emerald-400">{row.completed}</td>
+                        <tr key={row.date}>
+                          <td className="px-5 py-3 font-mono text-graphite-400">{row.date}</td>
+                          <td className="px-5 py-3 text-right text-graphite-300">{row.created}</td>
+                          <td className="px-5 py-3 text-right text-honey-400">{row.completed}</td>
                           <td className="px-5 py-3 text-right text-red-400">{row.failed}</td>
                           <td className="px-5 py-3 text-right">
                             {pct !== null ? (
-                              <span className={pct >= 90 ? "text-emerald-400" : pct >= 70 ? "text-amber-400" : "text-red-400"}>
+                              <span className={pct >= 90 ? "text-honey-400" : pct >= 70 ? "text-honey-500" : "text-red-400"}>
                                 {pct}%
                               </span>
                             ) : (
-                              <span className="text-neutral-600">—</span>
+                              <span className="text-graphite-500">—</span>
                             )}
                           </td>
                         </tr>
@@ -369,6 +362,7 @@ export function AnalyticsClient() {
           </div>
         </>
       ) : null}
-    </div>
+      </DashboardPage>
+    </>
   );
 }

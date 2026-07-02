@@ -34,7 +34,7 @@ export function Navbar() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-ivory-200/80 bg-ivory-50/90 backdrop-blur-md gpu-layer"
+          ? "border-b border-ivory-200/80 dark:border-graphite-700 bg-ivory-50/90 dark:bg-graphite-950/90 backdrop-blur-md gpu-layer"
           : "bg-transparent",
       )}
     >
@@ -46,7 +46,7 @@ export function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-graphite-500 transition-colors hover:text-graphite-900"
+              className="text-sm text-graphite-500 dark:text-graphite-300 transition-colors hover:text-graphite-900 dark:hover:text-ivory-50"
             >
               {link.label}
             </a>
@@ -56,7 +56,7 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <a
             href="#get-access"
-            className="text-sm font-medium text-graphite-500 transition-colors hover:text-graphite-900"
+            className="text-sm font-medium text-graphite-500 dark:text-graphite-300 transition-colors hover:text-graphite-900 dark:hover:text-ivory-50"
           >
             Sign in
           </a>
@@ -70,7 +70,7 @@ export function Navbar() {
 
         <button
           type="button"
-          className="rounded-lg p-2 text-graphite-900 md:hidden"
+          className="rounded-lg p-2 text-graphite-900 dark:text-ivory-50 md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
@@ -79,13 +79,13 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-ivory-200 bg-ivory-50 px-6 py-4 md:hidden">
+        <div className="border-t border-ivory-200 dark:border-graphite-700 bg-ivory-50 dark:bg-graphite-950 px-6 py-4 md:hidden">
           <nav className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm text-graphite-500"
+                className="text-sm text-graphite-500 dark:text-graphite-300"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
@@ -98,7 +98,7 @@ export function Navbar() {
               <Link
                 href="/login?next=/contributor"
                 onClick={() => setMobileOpen(false)}
-                className="text-center text-sm font-medium text-emerald-600"
+                className="text-center text-sm font-medium text-emerald-600 dark:text-emerald-400"
               >
                 Contributor sign in
               </Link>

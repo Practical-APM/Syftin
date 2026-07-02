@@ -6,6 +6,7 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -53,7 +54,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable} dark h-full`}
+    >
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

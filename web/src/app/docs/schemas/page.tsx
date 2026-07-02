@@ -9,13 +9,13 @@ export const metadata = {
 
 export default function DocsSchemasPage() {
   return (
-    <div className="min-h-dvh bg-ivory-50">
-      <header className="border-b border-ivory-200 bg-white/80 backdrop-blur-sm">
+    <div className="min-h-dvh bg-ivory-50 dark:bg-graphite-950">
+      <header className="border-b border-ivory-200 dark:border-graphite-800 bg-white/80 dark:bg-graphite-950/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-6">
           <SyftinLogo />
           <Link
             href="/docs"
-            className="inline-flex items-center gap-1.5 text-sm text-graphite-500 hover:text-graphite-900"
+            className="inline-flex items-center gap-1.5 text-sm text-graphite-500 dark:text-graphite-300 hover:text-graphite-900 dark:hover:text-ivory-50"
           >
             <ArrowLeft className="h-4 w-4" />
             All guides
@@ -24,10 +24,10 @@ export default function DocsSchemasPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-3xl font-semibold tracking-tight text-graphite-900">
+        <h1 className="app-page-title">
           Schema examples by domain
         </h1>
-        <p className="mt-3 text-sm text-graphite-500">
+        <p className="app-page-lead">
           Paste one example row as JSON when creating a job. Syftin uses these
           field names to shape and score your download.
         </p>
@@ -36,13 +36,13 @@ export default function DocsSchemasPage() {
           {DOMAIN_GUIDES.map((guide) => (
             <article
               key={guide.domain}
-              className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-xl border border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-900 shadow-sm"
             >
-              <div className="border-b border-ivory-200 px-5 py-4">
-                <p className="font-mono text-sm font-medium text-graphite-900">
+              <div className="border-b border-ivory-200 dark:border-graphite-700 px-5 py-4">
+                <p className="font-mono text-sm font-medium text-graphite-900 dark:text-ivory-50">
                   {guide.domain}
                 </p>
-                <p className="mt-0.5 text-xs text-graphite-500">
+                <p className="mt-0.5 text-xs text-graphite-500 dark:text-graphite-300">
                   {guide.vertical} · {guide.fetchNote}
                 </p>
               </div>

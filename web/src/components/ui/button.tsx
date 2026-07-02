@@ -26,10 +26,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             "bg-honey-500 text-graphite-950 hover:bg-honey-400 active:bg-honey-600 shadow-sm shadow-honey-500/20",
           variant === "secondary" &&
             "bg-graphite-900 text-ivory-50 hover:bg-graphite-800",
-          variant === "ghost" &&
-            "text-graphite-500 hover:text-graphite-900 hover:bg-ivory-100",
+            variant === "ghost" &&
+            "text-graphite-500 dark:text-graphite-300 hover:text-graphite-900 dark:hover:text-ivory-50 hover:bg-ivory-100 dark:hover:bg-graphite-800",
           variant === "outline" &&
-            "border border-ivory-200 bg-transparent text-graphite-900 hover:border-honey-500/40 hover:bg-ivory-100",
+            "border border-ivory-200 dark:border-graphite-700 bg-transparent text-graphite-900 dark:text-ivory-50 hover:border-honey-500/40 hover:bg-ivory-100 dark:hover:bg-graphite-800",
           size === "sm" && "px-4 py-2 text-sm",
           size === "md" && "px-5 py-2.5 text-sm",
           size === "lg" && "px-7 py-3 text-base",
