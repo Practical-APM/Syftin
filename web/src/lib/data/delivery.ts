@@ -24,6 +24,9 @@ export type OrgDeliveryConfig = {
   webhookIncludeData: boolean;
   hasWebhookSecret: boolean;
   apiKeyPrefix: string | null;
+  apiKeyScope: string;
+  apiKeyLastUsedAt: string | null;
+  apiKeyUsageCount: number;
   defaultExportFormat: ExportFormat;
 };
 
@@ -40,6 +43,9 @@ function mockConfig(): OrgDeliveryConfig {
       webhookIncludeData: false,
       hasWebhookSecret: false,
       apiKeyPrefix: null,
+      apiKeyScope: "read_write",
+      apiKeyLastUsedAt: null,
+      apiKeyUsageCount: 0,
       defaultExportFormat: "json",
     };
   }
@@ -57,7 +63,7 @@ export async function getOrgDeliveryConfig(
   const { data, error } = await admin
     .from("organizations")
     .select(
-      "webhook_url, webhook_enabled, webhook_notify_failed, webhook_include_data, webhook_secret, api_key_prefix, default_export_format",
+      "webhook_url, webhook_enabled, webhook_notify_failed, webhook_include_data, webhook_secret, api_key_prefix, api_key_scope, api_key_last_used_at, api_key_usage_count, default_export_format",
     )
     .eq("id", orgId)
     .single();
@@ -73,6 +79,9 @@ export async function getOrgDeliveryConfig(
     webhookIncludeData: Boolean(data.webhook_include_data),
     hasWebhookSecret: Boolean(data.webhook_secret),
     apiKeyPrefix: data.api_key_prefix,
+    apiKeyScope: data.api_key_scope ?? "read_write",
+    apiKeyLastUsedAt: data.api_key_last_used_at,
+    apiKeyUsageCount: Number(data.api_key_usage_count ?? 0),
     defaultExportFormat: (data.default_export_format ?? "json") as ExportFormat,
   };
 }
@@ -126,7 +135,8 @@ export async function updateOrgDeliveryConfig(
 
 export async function rotateOrgApiKey(
   orgId: string,
-): Promise<{ apiKey: string; prefix: string }> {
+  scope: string = "read_write",
+): Promise<{ apiKey: string; prefix: string; scope: string }> {
   const apiKey = generateApiKey();
   const prefix = apiKeyPrefix(apiKey);
   const hash = hashApiKey(apiKey);
@@ -135,8 +145,11 @@ export async function rotateOrgApiKey(
     setMockApiKey(apiKey, orgId);
     const cfg = mockConfig();
     cfg.apiKeyPrefix = prefix;
+    cfg.apiKeyScope = scope;
+    cfg.apiKeyUsageCount = 0;
+    cfg.apiKeyLastUsedAt = null;
     global.__syftinMockDelivery = cfg;
-    return { apiKey, prefix };
+    return { apiKey, prefix, scope };
   }
 
   const admin = createAdminClient();
@@ -145,12 +158,15 @@ export async function rotateOrgApiKey(
     .update({
       api_key_hash: hash,
       api_key_prefix: prefix,
+      api_key_scope: scope,
+      api_key_usage_count: 0,
+      api_key_last_used_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orgId);
 
   if (error) throw new Error(error.message);
-  return { apiKey, prefix };
+  return { apiKey, prefix, scope };
 }
 
 export async function revokeOrgApiKey(orgId: string): Promise<void> {

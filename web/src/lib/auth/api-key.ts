@@ -4,8 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 import { DEMO_ORG_ID } from "@/lib/env";
 
+export type ApiKeyScope = "read_only" | "read_write" | "admin" | "demo";
+
 export type ApiKeyAuth =
-  | { ok: true; orgId: string; orgName: string }
+  | { ok: true; orgId: string; orgName: string; scope: ApiKeyScope }
   | { ok: false; response: NextResponse };
 
 const API_KEY_PREFIX = "sftn_live_";
@@ -58,6 +60,7 @@ export async function requireApiKeyAuth(request: Request): Promise<ApiKeyAuth> {
       ok: true,
       orgId: global.__syftinMockApiKeyOrgId ?? DEMO_ORG_ID,
       orgName: "Demo workspace",
+      scope: "admin",
     };
   }
 
@@ -65,7 +68,7 @@ export async function requireApiKeyAuth(request: Request): Promise<ApiKeyAuth> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("organizations")
-    .select("id, name")
+    .select("id, name, api_key_scope, api_key_usage_count")
     .eq("api_key_hash", hash)
     .maybeSingle();
 
@@ -76,7 +79,24 @@ export async function requireApiKeyAuth(request: Request): Promise<ApiKeyAuth> {
     };
   }
 
-  return { ok: true, orgId: data.id, orgName: data.name };
+  // Update usage stats asynchronously
+  admin
+    .from("organizations")
+    .update({
+      api_key_last_used_at: new Date().toISOString(),
+      api_key_usage_count: (data.api_key_usage_count || 0) + 1,
+    })
+    .eq("id", data.id)
+    .then(({ error }) => {
+      if (error) console.error("Failed to update API key stats:", error);
+    });
+
+  return { 
+    ok: true, 
+    orgId: data.id, 
+    orgName: data.name, 
+    scope: (data.api_key_scope || "read_write") as ApiKeyScope 
+  };
 }
 
 export function apiKeyPrefix(key: string): string {

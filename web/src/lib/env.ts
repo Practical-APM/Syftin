@@ -109,3 +109,14 @@ export const MAX_BATCH_URLS = (() => {
   }
   return 100;
 })();
+
+/** Phase 4: enterprise API v2, geo-routing, analytics, webhooks */
+export function isPhase4Enabled() {
+  if (process.env.NEXT_PUBLIC_PHASE4_ENABLED === "true") return true;
+  if (process.env.NEXT_PUBLIC_PHASE4_ENABLED === "false") return false;
+  return process.env.NODE_ENV === "development";
+}
+
+export function isPhase4EnabledClient() {
+  return process.env.NEXT_PUBLIC_PHASE4_ENABLED === "true" || isPhase4Enabled();
+}

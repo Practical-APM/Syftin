@@ -197,10 +197,12 @@ export async function POST(request: Request) {
 
   try {
     if (action === "rotate_api_key") {
-      const { apiKey, prefix } = await rotateOrgApiKey(auth.org.orgId);
+      const scope = typeof body.scope === "string" ? body.scope : "read_write";
+      const { apiKey, prefix, scope: savedScope } = await rotateOrgApiKey(auth.org.orgId, scope);
       return NextResponse.json({
         apiKey,
         prefix,
+        scope: savedScope,
         message: "Copy this key now — it will not be shown again.",
       });
     }

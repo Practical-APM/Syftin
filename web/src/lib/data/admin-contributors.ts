@@ -12,6 +12,7 @@ export type AdminContributorNode = {
   connection_metered: boolean | null;
   tasks_completed: number;
   last_seen_at: string | null;
+  region?: string | null;
 };
 
 export type AdminContributor = {
@@ -60,6 +61,7 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
               connection_metered: false,
               tasks_completed: 42,
               last_seen_at: new Date().toISOString(),
+              region: "US",
             },
           ],
         },
@@ -87,7 +89,7 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
     admin
       .from("contributor_nodes")
       .select(
-        "id, contributor_id, machine_label, hostname, compute_tier, detected_tier, status, connection_metered, tasks_completed, last_seen_at",
+        "id, contributor_id, machine_label, hostname, compute_tier, detected_tier, status, connection_metered, tasks_completed, last_seen_at, region",
       )
       .order("created_at", { ascending: false }),
     admin
@@ -112,6 +114,7 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
       connection_metered: node.connection_metered,
       tasks_completed: node.tasks_completed,
       last_seen_at: node.last_seen_at,
+      region: node.region,
     });
     nodesByContributor.set(node.contributor_id, list);
   }

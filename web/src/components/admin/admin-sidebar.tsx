@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   ArrowLeft,
+  BarChart3,
   Building2,
   Cpu,
   FlaskConical,
@@ -25,6 +26,8 @@ const navItems = [
   { href: "/admin/contributor-invites", label: "Contributor invites", icon: Mail },
   { href: "/admin/contributors", label: "Contributor fleet", icon: Cpu },
   { href: "/admin/payouts", label: "Payouts", icon: IndianRupee },
+  { href: "/admin/revenue", label: "Revenue", icon: IndianRupee },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/benchmarks", label: "Benchmarks", icon: FlaskConical },
 ];
 

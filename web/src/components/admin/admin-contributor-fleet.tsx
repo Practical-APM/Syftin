@@ -121,6 +121,7 @@ export function AdminContributorFleetClient() {
                         <thead>
                           <tr className="border-b border-ivory-100 text-xs text-graphite-500">
                             <th className="px-5 py-3 font-medium">Device</th>
+                            <th className="px-5 py-3 font-medium">Region</th>
                             <th className="px-5 py-3 font-medium">Tier</th>
                             <th className="px-5 py-3 font-medium">Status</th>
                             <th className="px-5 py-3 font-medium">Tasks</th>
@@ -142,6 +143,23 @@ export function AdminContributorFleetClient() {
                                   <p className="mt-0.5 text-xs text-graphite-500">
                                     {node.hostname}
                                   </p>
+                                )}
+                              </td>
+                              <td className="px-5 py-3 text-xs text-graphite-700">
+                                {node.region ? (
+                                  <span className="flex items-center gap-1.5" title={node.region}>
+                                    <span className="text-sm">
+                                      {String.fromCodePoint(
+                                        ...node.region
+                                          .toUpperCase()
+                                          .split("")
+                                          .map((c) => 127397 + c.charCodeAt(0))
+                                      )}
+                                    </span>
+                                    <span className="text-graphite-500">{node.region}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-graphite-400">—</span>
                                 )}
                               </td>
                               <td className="px-5 py-3 text-xs text-graphite-700">

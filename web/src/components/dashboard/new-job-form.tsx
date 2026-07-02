@@ -26,6 +26,7 @@ export function NewJobForm({ domains }: { domains: string[] }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requiredRegion, setRequiredRegion] = useState("");
 
   function applyDomain(url: string) {
     setTargetUrl(url);
@@ -55,7 +56,12 @@ export function NewJobForm({ domains }: { domains: string[] }) {
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, target_url: targetUrl, example_schema }),
+      body: JSON.stringify({
+        name,
+        target_url: targetUrl,
+        example_schema,
+        ...(requiredRegion ? { required_region: requiredRegion } : {}),
+      }),
     });
 
     const data = await res.json();
@@ -140,6 +146,30 @@ export function NewJobForm({ domains }: { domains: string[] }) {
             </Link>
           </Panel>
 
+          <Panel>
+            <FieldGroup>
+              <FieldLabel htmlFor="region">Target region <span className="text-graphite-400 font-normal">(optional)</span></FieldLabel>
+              <FieldHint>
+                Route extraction to contributor nodes in a specific region — useful for GDPR compliance or geo-specific content.
+              </FieldHint>
+              <select
+                id="region"
+                value={requiredRegion}
+                onChange={(e) => setRequiredRegion(e.target.value)}
+                className="app-input mt-0.5 w-full"
+              >
+                <option value="">Any region</option>
+                <option value="IN">🇮🇳 India (IN)</option>
+                <option value="US">🇺🇸 United States (US)</option>
+                <option value="GB">🇬🇧 United Kingdom (GB)</option>
+                <option value="DE">🇩🇪 Germany (DE)</option>
+                <option value="FR">🇫🇷 France (FR)</option>
+                <option value="SG">🇸🇬 Singapore (SG)</option>
+                <option value="JP">🇯🇵 Japan (JP)</option>
+                <option value="AU">🇦🇺 Australia (AU)</option>
+              </select>
+            </FieldGroup>
+          </Panel>
           <Panel>
             <FieldGroup>
               <FieldLabel htmlFor="schema">Fields you want back</FieldLabel>

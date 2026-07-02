@@ -12,12 +12,12 @@ import {
   RefreshCw,
   Send,
   Server,
-  Webhook,
 } from "lucide-react";
 import { DashboardHeader, DashboardPage } from "@/components/dashboard/sidebar";
 import { Panel } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InlineError } from "@/components/ui/error-fallback";
+import { WebhookSubscriptionsPanel } from "@/components/dashboard/webhook-subscriptions-panel";
 import type { OrgDeliveryConfig } from "@/lib/data/delivery";
 import type { BucketDeliveryConfig } from "@/lib/data/bucket-delivery";
 import type { SftpDeliveryConfig } from "@/lib/data/sftp-delivery";
@@ -92,6 +92,8 @@ export function IntegrationsPanel() {
   const [testingSftp, setTestingSftp] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [newApiScope, setNewApiScope] = useState<string | null>(null);
+  const [generateScope, setGenerateScope] = useState<string>("read_write");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -166,11 +168,6 @@ export function IntegrationsPanel() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        webhookUrl: webhookUrl || null,
-        webhookEnabled,
-        webhookNotifyFailed: notifyFailed,
-        webhookIncludeData: includeData,
-        webhookSecret: webhookSecret || undefined,
         defaultExportFormat: defaultFormat,
         bucketEnabled,
         bucketProvider,
@@ -232,20 +229,6 @@ export function IntegrationsPanel() {
     load();
   }
 
-  async function testWebhook() {
-    setTesting(true);
-    setMessage(null);
-    setError(null);
-    const res = await fetch("/api/org/delivery/test", { method: "POST" });
-    const data = await res.json();
-    setTesting(false);
-    if (!res.ok) {
-      setError(data.error ?? "Test failed.");
-      return;
-    }
-    setMessage("Test webhook sent — check your endpoint.");
-  }
-
   async function testBucket() {
     setTestingBucket(true);
     setMessage(null);
@@ -277,11 +260,12 @@ export function IntegrationsPanel() {
   async function rotateKey() {
     setRotating(true);
     setNewApiKey(null);
+    setNewApiScope(null);
     setError(null);
     const res = await fetch("/api/org/delivery", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "rotate_api_key" }),
+      body: JSON.stringify({ action: "rotate_api_key", scope: generateScope }),
     });
     const data = await res.json();
     setRotating(false);
@@ -290,6 +274,7 @@ export function IntegrationsPanel() {
       return;
     }
     setNewApiKey(data.apiKey);
+    setNewApiScope(data.scope);
     load();
   }
 
@@ -320,88 +305,12 @@ export function IntegrationsPanel() {
         ) : (
           <>
             {message && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 mb-6">
                 {message}
               </div>
             )}
 
-            <Panel>
-              <div className="flex items-center gap-2">
-                <Webhook className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">Webhooks</h2>
-              </div>
-              <p className="mt-2 text-sm text-graphite-500">
-                We POST to your URL when a job completes or fails. Verify payloads with{" "}
-                <code className="text-xs">X-Syftin-Signature</code> (HMAC-SHA256).
-              </p>
-              <div className="mt-5 space-y-4">
-                <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Endpoint URL</span>
-                  <input
-                    type="url"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://your-app.com/webhooks/syftin"
-                    className="app-input mt-1.5"
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">
-                    Signing secret{" "}
-                    {config?.hasWebhookSecret && (
-                      <span className="text-graphite-400">(configured)</span>
-                    )}
-                  </span>
-                  <input
-                    type="password"
-                    value={webhookSecret}
-                    onChange={(e) => setWebhookSecret(e.target.value)}
-                    placeholder={config?.hasWebhookSecret ? "Leave blank to keep" : "Optional"}
-                    className="app-input mt-1.5 font-mono"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
-                  <input
-                    type="checkbox"
-                    checked={webhookEnabled}
-                    onChange={(e) => setWebhookEnabled(e.target.checked)}
-                  />
-                  Enable webhooks for completed jobs
-                </label>
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
-                  <input
-                    type="checkbox"
-                    checked={notifyFailed}
-                    onChange={(e) => setNotifyFailed(e.target.checked)}
-                    disabled={!webhookEnabled}
-                  />
-                  Notify on job failures
-                </label>
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
-                  <input
-                    type="checkbox"
-                    checked={includeData}
-                    onChange={(e) => setIncludeData(e.target.checked)}
-                  />
-                  Include row data in payload (small jobs only; large sets use download URLs)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" disabled={saving} onClick={saveWebhook}>
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save webhook"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={testing || !webhookUrl}
-                    onClick={testWebhook}
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    {testing ? "Sending…" : "Send test"}
-                  </Button>
-                </div>
-              </div>
-            </Panel>
+            <WebhookSubscriptionsPanel />
 
             <Panel>
               <div className="flex items-center gap-2">
@@ -866,11 +775,23 @@ export function IntegrationsPanel() {
               <p className="mt-2 text-sm text-graphite-500">
                 Machine-to-machine access with an API key. Session cookies not required.
               </p>
-              {config?.apiKeyPrefix && (
-                <p className="mt-3 font-mono text-xs text-graphite-600">
-                  Active key: {config.apiKeyPrefix}…
-                </p>
-              )}
+              <div className="flex items-center justify-between mt-3">
+                {config?.apiKeyPrefix ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="font-mono text-xs text-graphite-600">
+                      Active key: {config.apiKeyPrefix}…
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-graphite-500">
+                      <span>Scope: <strong className="font-medium">{config.apiKeyScope}</strong></span>
+                      <span>Uses: {config.apiKeyUsageCount}</span>
+                      {config.apiKeyLastUsedAt && <span>Last used: {new Date(config.apiKeyLastUsedAt).toLocaleDateString()}</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-graphite-500">No active key.</p>
+                )}
+              </div>
+              
               {newApiKey && (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs font-medium text-amber-900">
@@ -886,19 +807,31 @@ export function IntegrationsPanel() {
                       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       {copied ? "Copied" : "Copy"}
                     </button>
+                    <span className="ml-2 text-xs text-graphite-500 font-medium">Scope: {newApiScope}</span>
                   </div>
                 </div>
               )}
-              <Button
-                type="button"
-                size="sm"
-                className="mt-4"
-                disabled={rotating}
-                onClick={rotateKey}
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                {rotating ? "Generating…" : config?.apiKeyPrefix ? "Rotate API key" : "Generate API key"}
-              </Button>
+              
+              <div className="flex items-center gap-3 mt-4 border-t border-graphite-100 pt-4">
+                <select 
+                  value={generateScope}
+                  onChange={(e) => setGenerateScope(e.target.value)}
+                  className="app-input text-xs h-8 py-0"
+                >
+                  <option value="read_only">Read-only (GET)</option>
+                  <option value="read_write">Read-write (GET/POST)</option>
+                  <option value="admin">Admin (All + Org settings)</option>
+                </select>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={rotating}
+                  onClick={rotateKey}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  {rotating ? "Generating…" : config?.apiKeyPrefix ? "Rotate key" : "Generate API key"}
+                </Button>
+              </div>
               <pre className="mt-4 overflow-x-auto rounded-lg bg-graphite-950 p-4 font-mono text-[11px] leading-relaxed text-emerald-400/90">
                 {apiExample}
               </pre>

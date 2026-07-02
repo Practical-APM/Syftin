@@ -1,5 +1,5 @@
 {
-  "crons": [
+  "_crons": [
     {
       "path": "/api/cron/health-alerts",
       "schedule": "*/5 * * * *"
