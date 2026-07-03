@@ -116,8 +116,9 @@ Hub worker (`go run ./cmd/worker`):
 | Schedule | Route | Purpose |
 |----------|-------|---------|
 | Every 5 min | `/api/cron/health-alerts` | Hub worker / Ollama / Supabase probes; contributor node offline sweep |
-| Hourly | `/api/cron/contributor-ops` | Reclaim stuck fetches, optional auto-payouts, retry pending deliveries |
+| Hourly | `/api/cron/contributor-ops` | Reclaim stuck fetches, optional auto-payouts, retry pending deliveries + webhook subscription retries |
 | Daily 02:00 UTC | `/api/cron/scheduled-exports` | Scheduled NDJSON batch exports per org |
+| Daily 03:00 UTC | `/api/cron/analytics-snapshots` | Aggregate daily metrics into `analytics_snapshots` |
 
 Set `SLACK_OPS_WEBHOOK_URL` or `OPS_WEBHOOK_URL` to receive Slack/generic webhook alerts when:
 

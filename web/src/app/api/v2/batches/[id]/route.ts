@@ -2,18 +2,8 @@ import { NextResponse } from "next/server";
 import { requireApiKeyAuth, requireApiScope } from "@/lib/auth/api-key";
 import { requirePhase4Api } from "@/lib/auth/v2-api";
 import { withRateLimit } from "@/lib/auth/rate-limit";
-import { buildDownloadUrls } from "@/lib/data/delivery";
-import { getJob } from "@/lib/data/jobs";
-import { getPublicSiteUrl } from "@/lib/env";
-
-function buildV2DownloadUrls(jobId: string) {
-  const base = `${getPublicSiteUrl()}/api/v2/jobs/${jobId}/result`;
-  return {
-    json: base,
-    csv: `${base}?format=csv`,
-    ndjson: `${base}?format=ndjson`,
-  };
-}
+import { getBatch } from "@/lib/data/batches";
+import { getPublicSiteUrl, isPhase3Enabled } from "@/lib/env";
 
 export async function GET(
   request: Request,
@@ -21,6 +11,10 @@ export async function GET(
 ) {
   const phaseBlock = requirePhase4Api();
   if (phaseBlock) return phaseBlock;
+
+  if (!isPhase3Enabled()) {
+    return NextResponse.json({ error: "Batch API requires Phase 3." }, { status: 404 });
+  }
 
   const auth = await requireApiKeyAuth(request);
   if (!auth.ok) return auth.response;
@@ -30,27 +24,27 @@ export async function GET(
 
   return withRateLimit(auth.orgId, async () => {
     const { id } = await params;
-    const job = await getJob(id, {
+    const data = await getBatch(id, {
       orgId: auth.orgId,
       orgName: auth.orgName,
       dpaSignedAt: null,
       role: "api",
     });
 
-    if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    if (!data) {
+      return NextResponse.json({ error: "Batch not found" }, { status: 404 });
     }
+
+    const downloadUrl =
+      data.batch.status === "completed"
+        ? `${getPublicSiteUrl()}/api/v2/batches/${id}/result`
+        : null;
 
     return NextResponse.json({
       api_version: "v2",
-      job,
-      download_urls:
-        job.status === "completed"
-          ? {
-              v1: buildDownloadUrls(job.id),
-              v2: buildV2DownloadUrls(job.id),
-            }
-          : null,
+      batch: data.batch,
+      jobs: data.jobs,
+      download_url: downloadUrl,
     });
   });
 }

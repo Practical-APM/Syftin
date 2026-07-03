@@ -17,6 +17,7 @@ import {
   getCreditBalance,
   isCreditsEnforced,
 } from "@/lib/data/credits";
+import { DEFAULT_JOB_COST_CENTS } from "@/lib/env";
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
 import { sanitizeJobInput } from "@/lib/sanitize";
 import type { JobBatch, BatchSummary, Job, BatchPricing } from "@/lib/types/jobs";
@@ -110,7 +111,8 @@ export type CreateBatchInput = {
   urls: string[];
   example_schema: Record<string, unknown>;
   organization_id?: string;
-  batch_pricing?: BatchPricing;
+  budget_cents?: number;
+  max_records?: number;
 };
 
 export type CreateBatchResult =
@@ -167,7 +169,7 @@ export async function createBatch(
 
   const { supabase, orgId } = await getBatchesClient(workspace);
   const admin = createAdminClient();
-  const pricingMode = input.batch_pricing ?? "per_shard";
+  const pricingMode: BatchPricing = "per_batch";
   
   // Create parent batch
   const { data: batch, error: batchError } = await supabase
@@ -218,7 +220,15 @@ export async function createBatch(
 
   // Handle credits
   if (isCreditsEnforced()) {
-    const charge = await chargeBatchCredits(orgId, batch.id, validUrls.length, pricingMode);
+    const chargeAmount =
+      input.budget_cents ??
+      DEFAULT_JOB_COST_CENTS * validUrls.length;
+    const charge = await chargeBatchCredits(
+      orgId,
+      batch.id,
+      chargeAmount,
+      validUrls.length,
+    );
     if (!charge.ok) {
        // rollback
        await admin.from("job_batches").delete().eq("id", batch.id);
@@ -285,6 +295,9 @@ export async function cancelBatch(batchId: string, org?: SessionOrg): Promise<{ 
   if (batchError) {
       return { success: false, error: batchError.message };
   }
+
+  const { dispatchBatchCancelledEvent } = await import("@/lib/data/batch-events");
+  await dispatchBatchCancelledEvent(batchId, orgId);
 
   return { success: true };
 }

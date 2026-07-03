@@ -23,6 +23,8 @@ export async function GET() {
   }
 }
 
+import { validateJobVolumeInput } from "@/lib/pricing/estimates";
+
 export async function POST(request: Request) {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.response;
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, target_url, example_schema, required_region } = body;
+    const { name, target_url, example_schema, required_region, budget_cents, max_records } = body;
 
     if (!name || !target_url || !example_schema) {
       return NextResponse.json(
@@ -58,8 +60,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const volume = validateJobVolumeInput({ max_records, budget_cents });
+    if (!volume.ok) {
+      return NextResponse.json({ error: volume.error }, { status: 400 });
+    }
+
     const result = await createJob(
-      { name, target_url, example_schema, required_region },
+      { name, target_url, example_schema, required_region, budget_cents, max_records },
       auth.org,
     );
 

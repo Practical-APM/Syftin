@@ -58,7 +58,7 @@ export function StatCard({
   value: string;
   hint?: string;
   icon?: React.ComponentType<{ className?: string }>;
-  accent?: "default" | "emerald";
+  accent?: "default" | "emerald" | "honey";
   valueClassName?: string;
 }) {
   return (
@@ -68,7 +68,11 @@ export function StatCard({
           <Icon
             className={cn(
               "h-4 w-4 shrink-0",
-              accent === "emerald" ? "text-emerald-600" : "text-honey-500",
+              accent === "emerald"
+                ? "text-emerald-600 dark:text-emerald-400"
+                : accent === "honey"
+                  ? "text-honey-500"
+                  : "text-honey-500",
             )}
           />
           <p className="text-xs font-medium uppercase tracking-wide">{label}</p>

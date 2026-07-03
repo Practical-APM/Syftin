@@ -23,7 +23,7 @@ export function ContributorReleaseStatus() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-graphite-500">
+      <div className="flex items-center gap-2 text-xs text-graphite-400">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Checking release binaries…
       </div>
@@ -35,22 +35,17 @@ export function ContributorReleaseStatus() {
   const localAssets = manifest.localBuild?.assets ?? [];
   const hasLocal = localAssets.length > 0;
   const hasGithub = Boolean(manifest.githubRelease?.repo);
-  const platformHint = hasLocal
-    ? `${localAssets.length} binary asset(s) on this server`
-    : hasGithub
-      ? "Binaries served from GitHub Releases"
-      : "Build binaries or set SYFTIN_GITHUB_REPO";
 
   return (
-    <div className="rounded-xl border border-ivory-200 bg-ivory-50/50 px-4 py-3 text-xs text-graphite-600">
+    <div className="rounded-xl border border-graphite-700 bg-graphite-900/40 px-4 py-3 text-xs text-graphite-400">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p>
-          <span className="font-medium text-graphite-800">
+          <span className="font-medium text-graphite-200">
             Node release v{manifest.version}
           </span>
           {" · "}
           {hasLocal
-            ? platformHint
+            ? `${localAssets.length} binary asset(s) on this server`
             : hasGithub
               ? "Binaries served from GitHub Releases"
               : "Installer will build from source or use Docker"}
@@ -58,7 +53,7 @@ export function ContributorReleaseStatus() {
         {!hasLocal && !hasGithub && (
           <Link
             href="/contributor/help"
-            className="inline-flex items-center gap-1 font-medium text-emerald-700 underline"
+            className="inline-flex items-center gap-1 font-medium text-honey-400 hover:text-honey-300"
           >
             <Download className="h-3 w-3" />
             Install options

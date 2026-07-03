@@ -63,49 +63,40 @@ export function ContributorEarningsPanel({
               ? `UPI: ${contributor.upiVpa}`
               : "Add UPI in Setup to receive payouts"
           }
-          accent="emerald"
+          accent="honey"
         />
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-graphite-500">
+          <div className="flex items-center gap-2 text-sm text-graphite-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading earnings…
           </div>
         ) : error ? (
           <InlineError message={error} onRetry={load} />
         ) : earnings.length === 0 ? (
-          <p className="text-sm text-graphite-500">
+          <p className="text-sm text-graphite-400">
             No earnings yet. Keep your node app running to claim fetch tasks.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm">
+          <div className="app-data-table overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-ivory-200 bg-ivory-50/80">
-                  <th className="px-5 py-3 text-xs font-medium text-graphite-500">
-                    Amount
-                  </th>
-                  <th className="px-5 py-3 text-xs font-medium text-graphite-500">
-                    Task
-                  </th>
-                  <th className="px-5 py-3 text-xs font-medium text-graphite-500">
-                    When
-                  </th>
+                <tr>
+                  <th className="px-5 py-3 text-xs font-medium text-graphite-400">Amount</th>
+                  <th className="px-5 py-3 text-xs font-medium text-graphite-400">Task</th>
+                  <th className="px-5 py-3 text-xs font-medium text-graphite-400">When</th>
                 </tr>
               </thead>
               <tbody>
                 {earnings.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-ivory-100 last:border-0"
-                  >
-                    <td className="px-5 py-4 font-medium text-emerald-700">
+                  <tr key={row.id} className="border-t border-graphite-800">
+                    <td className="px-5 py-4 font-medium text-honey-400">
                       +{formatPaise(row.amount_paise)}
                     </td>
-                    <td className="px-5 py-4 text-xs text-graphite-500">
+                    <td className="px-5 py-4 text-xs text-graphite-400">
                       {rewardTierLabel(row) ?? "Fetch task"}
                     </td>
-                    <td className="px-5 py-4 text-xs text-graphite-500">
+                    <td className="px-5 py-4 text-xs text-graphite-400">
                       {formatDate(row.created_at)}
                     </td>
                   </tr>

@@ -33,25 +33,25 @@ export function ContributorOnboarding({
   ];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/80 via-white to-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-honey-500/20 bg-graphite-900/80 shadow-sm">
       <div className="grid lg:grid-cols-5">
-        <div className="border-b border-emerald-100 p-6 lg:col-span-2 lg:border-b-0 lg:border-r">
-          <p className="text-xs font-medium uppercase tracking-wider text-emerald-700">
+        <div className="border-b border-graphite-700 p-6 lg:col-span-2 lg:border-b-0 lg:border-r">
+          <p className="text-xs font-medium uppercase tracking-wider text-honey-400">
             Getting started
           </p>
-          <h2 className="marketing-title mt-2 text-xl">
+          <h2 className="marketing-title mt-2 text-xl text-ivory-50">
             Plug in your laptop in 4 steps
           </h2>
-          <p className="marketing-lead mt-2">
+          <p className="mt-2 text-sm text-graphite-300">
             No coding required. Copy one command, run it, and start earning from
             approved public-page fetches.
           </p>
-          <p className="mt-4 text-xs font-medium text-emerald-700">
+          <p className="mt-4 text-xs font-medium text-honey-400">
             {doneCount} of 4 complete
           </p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-100">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-graphite-800">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
+              className="h-full rounded-full bg-honey-500 transition-all"
               style={{ width: `${(doneCount / 4) * 100}%` }}
             />
           </div>
@@ -60,8 +60,7 @@ export function ContributorOnboarding({
         <ol className="space-y-0 lg:col-span-3">
           {INSTALL_STEPS.map((step, i) => {
             const done = stepStatus[i];
-            const blocked =
-              step.id === "device" && !hasUpi && !done;
+            const blocked = step.id === "device" && !hasUpi && !done;
             const isNext =
               !done &&
               !blocked &&
@@ -72,17 +71,17 @@ export function ContributorOnboarding({
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className={`flex gap-4 border-b border-emerald-50 px-6 py-4 last:border-0 ${
-                  isNext ? "bg-emerald-50/40" : ""
+                className={`flex gap-4 border-b border-graphite-800 px-6 py-4 last:border-0 ${
+                  isNext ? "bg-honey-500/5" : ""
                 }`}
               >
                 <span
                   className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                     done
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-honey-500 text-graphite-950"
                       : isNext
-                        ? "border-2 border-emerald-500 text-emerald-600"
-                        : "border border-ivory-300 text-graphite-400"
+                        ? "border-2 border-honey-500 text-honey-400"
+                        : "border border-graphite-600 text-graphite-500"
                   }`}
                 >
                   {done ? (
@@ -92,10 +91,8 @@ export function ContributorOnboarding({
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-graphite-900">
-                    {step.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-graphite-500">
+                  <p className="text-sm font-medium text-ivory-50">{step.title}</p>
+                  <p className="mt-0.5 text-xs text-graphite-400">
                     {blocked
                       ? "Complete Setup with your UPI ID first."
                       : step.description}

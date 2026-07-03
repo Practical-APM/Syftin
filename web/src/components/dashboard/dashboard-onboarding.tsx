@@ -43,7 +43,7 @@ export function DashboardOnboarding() {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10">
                   <step.icon className="h-4 w-4 text-honey-600 dark:text-honey-400" />
                 </span>
-                <span className="text-sm font-normal text-graphite-700 dark:text-graphite-200">
+                <span className="text-sm font-normal text-graphite-600 dark:text-ivory-50/90">
                   {step.label}
                 </span>
               </motion.li>
@@ -60,9 +60,9 @@ export function DashboardOnboarding() {
           </div>
         </div>
 
-        <div className="border-t border-ivory-200 bg-graphite-950 p-6 sm:p-8 lg:border-t-0 lg:border-l">
+        <div className="border-t border-ivory-200 bg-graphite-950 p-6 sm:p-8 lg:border-t-0 lg:border-l lg:border-graphite-800">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs text-graphite-500">Example output</span>
+            <span className="text-xs text-graphite-400">Example output</span>
             <span className="rounded-md bg-graphite-800 px-2 py-0.5 text-[10px] text-graphite-400">
               Sample
             </span>
@@ -75,18 +75,9 @@ export function DashboardOnboarding() {
           >
             {sampleJson}
           </motion.pre>
-          <div className="mt-4 flex h-10 items-end gap-1 opacity-70">
-            {[35, 55, 45, 70, 50, 85, 65].map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                transition={{ delay: 0.3 + i * 0.04, duration: 0.35 }}
-                className="flex-1 origin-bottom rounded-sm bg-honey-500/60"
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
+          <p className="mt-4 text-[11px] leading-relaxed text-graphite-500">
+            Structured JSON with field-match scores — download, webhook, or push to your bucket.
+          </p>
         </div>
       </div>
     </div>

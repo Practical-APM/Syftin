@@ -8,6 +8,8 @@ import {
   RATE_LIMITS,
 } from "@/lib/security/rate-limit";
 
+import { validateJobVolumeInput } from "@/lib/pricing/estimates";
+
 export async function GET() {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.response;
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, urls, example_schema, batch_pricing } = body;
+    const { name, urls, example_schema, budget_cents, max_records } = body;
 
     if (!name || !urls || !Array.isArray(urls) || !example_schema) {
       return NextResponse.json(
@@ -58,8 +60,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const volume = validateJobVolumeInput({ max_records, budget_cents });
+    if (!volume.ok) {
+      return NextResponse.json({ error: volume.error }, { status: 400 });
+    }
+
     const result = await createBatch(
-      { name, urls, example_schema, batch_pricing },
+      { name, urls, example_schema, budget_cents, max_records },
       auth.org,
     );
 

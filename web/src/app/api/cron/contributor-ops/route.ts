@@ -3,6 +3,7 @@ import { processPendingJobDeliveries } from "@/lib/data/delivery";
 import { sweepStaleContributorNodes } from "@/lib/data/contributors";
 import { reclaimStaleFetchClaims } from "@/lib/data/fetch-tasks";
 import { processPendingPayoutsAuto } from "@/lib/data/payouts";
+import { retryFailedSubscriptionDeliveries } from "@/lib/data/webhook-subscriptions";
 import {
   isAutoDisbursePayoutsEnabled,
   isPhase2Enabled,
@@ -47,11 +48,13 @@ async function runContributorOps() {
 async function runPlatformOps() {
   const contributor = await runContributorOps();
   const deliveries = await processPendingJobDeliveries(25);
+  const webhookSubs = await retryFailedSubscriptionDeliveries(20);
 
   return {
     ok: true,
     contributor,
     deliveries,
+    webhookSubscriptions: webhookSubs,
   };
 }
 

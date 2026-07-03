@@ -245,10 +245,11 @@ export async function dispatchSubscriptionEvent(
       });
 
       // Update subscription metadata
+      const priorFailures = (sub as { failure_count?: number }).failure_count ?? 0;
       await admin.from("webhook_subscriptions").update({
         last_triggered_at: new Date().toISOString(),
         last_status: responseStatus,
-        failure_count: delivered ? 0 : (sub as { failure_count?: number }).failure_count ?? 0 + 1,
+        failure_count: delivered ? 0 : priorFailures + 1,
       }).eq("id", sub.id);
 
       if (delivered) dispatched++;

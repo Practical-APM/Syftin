@@ -1,23 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
-import { FieldGroup, FieldHint, FieldLabel, Input, Textarea, Select } from "@/components/ui/input";
+import { CostEstimatePanel } from "@/components/dashboard/cost-estimate-panel";
+import { FieldGroup, FieldHint, FieldLabel, Input, Textarea } from "@/components/ui/input";
 import { formatSchemaTemplate, schemaForDomain } from "@/lib/constants/schema-templates";
 import { DashboardHeader, DashboardPage } from "@/components/dashboard/sidebar";
+import { MAX_BATCH_URLS, MAX_JOB_BUDGET_INR, PLATFORM_MAX_RECORDS } from "@/lib/env";
+import {
+  DEFAULT_TARGET_RECORDS,
+  MIN_BUDGET_INR,
+  attachJobMeta,
+  estimateBatchCost,
+} from "@/lib/pricing/estimates";
+
+const VOLUME_PRESETS = [1_000, 10_000, 100_000, 1_000_000] as const;
 
 export function NewBatchForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [urlsText, setUrlsText] = useState("");
   const [schemaText, setSchemaText] = useState(formatSchemaTemplate(schemaForDomain("naukri.com")));
-  const [pricing, setPricing] = useState("per_shard");
+  const [maxRecords, setMaxRecords] = useState(String(DEFAULT_TARGET_RECORDS));
+  const [budgetInr, setBudgetInr] = useState("5000");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const urlCount = useMemo(
+    () =>
+      urlsText
+        .split("\n")
+        .map((u) => u.trim())
+        .filter(Boolean).length,
+    [urlsText],
+  );
+
+  const estimate = useMemo(
+    () =>
+      estimateBatchCost({
+        urlCount: Math.max(urlCount, 1),
+        maxRecords: Number(maxRecords) || DEFAULT_TARGET_RECORDS,
+        budgetInr: Number(budgetInr) || undefined,
+      }),
+    [urlCount, maxRecords, budgetInr],
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +65,26 @@ export function NewBatchForm() {
       return;
     }
 
+    if (urls.length > MAX_BATCH_URLS) {
+      setError(`Maximum ${MAX_BATCH_URLS} URLs per batch.`);
+      setLoading(false);
+      return;
+    }
+
+    const parsedMaxRecords = Number(maxRecords);
+    if (!Number.isFinite(parsedMaxRecords) || parsedMaxRecords < 1) {
+      setError("Target volume must be at least 1 record per URL.");
+      setLoading(false);
+      return;
+    }
+    if (parsedMaxRecords > PLATFORM_MAX_RECORDS) {
+      setError(
+        `Target volume cannot exceed ${PLATFORM_MAX_RECORDS.toLocaleString()} rows per URL.`,
+      );
+      setLoading(false);
+      return;
+    }
+
     let example_schema: Record<string, unknown>;
     try {
       example_schema = JSON.parse(schemaText);
@@ -47,10 +97,34 @@ export function NewBatchForm() {
       return;
     }
 
+    const budget = Number(budgetInr);
+    if (!Number.isFinite(budget) || budget < MIN_BUDGET_INR) {
+      setError(`Set a budget of at least ₹${MIN_BUDGET_INR}.`);
+      setLoading(false);
+      return;
+    }
+    if (budget > MAX_JOB_BUDGET_INR) {
+      setError(`Budget cannot exceed ₹${MAX_JOB_BUDGET_INR.toLocaleString()}.`);
+      setLoading(false);
+      return;
+    }
+
+    const budgetCents = Math.round(budget * 100);
+
     const res = await fetch("/api/batches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, urls, example_schema, batch_pricing: pricing }),
+      body: JSON.stringify({
+        name,
+        urls,
+        example_schema: attachJobMeta(example_schema, {
+          max_records: parsedMaxRecords,
+          budget_cents: budgetCents,
+          effective_max_records: estimate.effectiveRecords,
+        }),
+        max_records: parsedMaxRecords,
+        budget_cents: estimate.totalCents,
+      }),
     });
 
     const data = await res.json();
@@ -71,9 +145,9 @@ export function NewBatchForm() {
       <DashboardPage>
         <Link
           href="/dashboard/batches"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-graphite-500 transition-colors hover:text-graphite-900"
+          className="app-back-link mb-6"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 shrink-0" />
           Back to batches
         </Link>
 
@@ -95,7 +169,9 @@ export function NewBatchForm() {
           <Panel>
             <FieldGroup>
               <FieldLabel htmlFor="urls">URLs (one per line)</FieldLabel>
-              <FieldHint>Max 100 URLs per batch.</FieldHint>
+              <FieldHint>
+                Max {MAX_BATCH_URLS} URLs per batch · {urlCount} entered
+              </FieldHint>
               <Textarea
                 id="urls"
                 required
@@ -117,23 +193,67 @@ export function NewBatchForm() {
                 mono
                 value={schemaText}
                 onChange={(e) => setSchemaText(e.target.value)}
-                className="mt-0.5 border-graphite-800 bg-graphite-950 text-graphite-300 focus:border-honey-500/50"
+                className="mt-0.5 border-graphite-700 bg-graphite-950 text-graphite-200 focus:border-honey-500/50"
               />
             </FieldGroup>
           </Panel>
 
-          <Panel>
-             <FieldGroup>
-               <FieldLabel htmlFor="pricing">Pricing Model</FieldLabel>
-               <Select id="pricing" value={pricing} onChange={(e) => setPricing(e.target.value)} className="mt-0.5">
-                  <option value="per_shard">Per Shard (₹5 per URL)</option>
-                  <option value="per_batch">Per Batch (₹5 total)</option>
-               </Select>
-             </FieldGroup>
+          <Panel className="space-y-4">
+            <FieldGroup>
+              <FieldLabel htmlFor="max-records">Target volume per URL (rows)</FieldLabel>
+              <FieldHint>
+                Rows to collect from each URL. Stops at budget or this target.
+                Platform safety limit: {PLATFORM_MAX_RECORDS.toLocaleString()} rows/URL.
+              </FieldHint>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {VOLUME_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setMaxRecords(String(preset))}
+                    className="rounded-md border border-graphite-700 bg-graphite-900 px-2.5 py-1 text-[11px] text-graphite-300 transition-colors hover:border-honey-500/40 hover:text-honey-400"
+                  >
+                    {preset >= 1_000_000
+                      ? `${preset / 1_000_000}M`
+                      : preset >= 1_000
+                        ? `${preset / 1_000}K`
+                        : preset}
+                  </button>
+                ))}
+              </div>
+              <Input
+                id="max-records"
+                type="number"
+                min={1}
+                required
+                value={maxRecords}
+                onChange={(e) => setMaxRecords(e.target.value)}
+                className="mt-2"
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <FieldLabel htmlFor="budget">Your budget (INR)</FieldLabel>
+              <FieldHint>
+                Total spend cap for the batch. Scales with URL count and row volume
+                — 10 URLs × 100K rows ≈ ₹1L+ at ₹0.10/record.
+              </FieldHint>
+              <Input
+                id="budget"
+                type="number"
+                min={MIN_BUDGET_INR}
+                step={1}
+                required
+                value={budgetInr}
+                onChange={(e) => setBudgetInr(e.target.value)}
+                className="mt-0.5"
+              />
+            </FieldGroup>
           </Panel>
 
+          <CostEstimatePanel estimate={estimate} label="Estimated batch cost" />
+
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
           )}

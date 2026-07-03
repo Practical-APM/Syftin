@@ -144,23 +144,22 @@ export async function chargeJobCredits(
     .eq("id", orgId);
 
   if (updateError) return { ok: false, error: updateError.message };
+
+  const { maybeDispatchCreditLowEvent } = await import("@/lib/data/credit-alerts");
+  await maybeDispatchCreditLowEvent(orgId);
+
   return { ok: true };
 }
 
 export async function chargeBatchCredits(
   orgId: string,
   batchId: string,
+  amountCents: number,
   shardCount: number,
-  pricingMode: string, // "per_shard" | "per_batch"
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isCreditsEnforced() || !isSupabaseConfigured()) {
     return { ok: true };
   }
-
-  const amountCents =
-    pricingMode === "per_batch"
-      ? DEFAULT_JOB_COST_CENTS
-      : DEFAULT_JOB_COST_CENTS * shardCount;
 
   const admin = createAdminClient();
   const { data: org, error: orgError } = await admin
@@ -195,6 +194,10 @@ export async function chargeBatchCredits(
     .eq("id", orgId);
 
   if (updateError) return { ok: false, error: updateError.message };
+
+  const { maybeDispatchCreditLowEvent } = await import("@/lib/data/credit-alerts");
+  await maybeDispatchCreditLowEvent(orgId);
+
   return { ok: true };
 }
 
@@ -207,19 +210,25 @@ export async function refundFailedShards(
     return { ok: true };
   }
 
-  // Only refund if pricing was per_shard. 
+  // Refund proportional share for failed shards on budget-priced batches.
   const admin = createAdminClient();
   const { data: batch, error: batchError } = await admin
     .from("job_batches")
-    .select("batch_pricing")
+    .select("batch_pricing, total_shards, example_schema")
     .eq("id", batchId)
     .single();
 
-  if (batchError || !batch || batch.batch_pricing !== "per_shard") {
+  if (batchError || !batch) {
     return { ok: true };
   }
 
-  const refundAmount = DEFAULT_JOB_COST_CENTS * failedCount;
+  const meta = (batch.example_schema as { _syftin?: { budget_cents?: number } })?._syftin;
+  const batchBudgetCents = meta?.budget_cents;
+  const perShardRefund =
+    batchBudgetCents && batch.total_shards > 0
+      ? Math.round(batchBudgetCents / batch.total_shards)
+      : DEFAULT_JOB_COST_CENTS;
+  const refundAmount = perShardRefund * failedCount;
 
   const { error: txError } = await admin.from("credit_transactions").insert({
     organization_id: orgId,

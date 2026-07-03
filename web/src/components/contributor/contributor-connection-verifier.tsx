@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Loader2, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function ContributorConnectionVerifier({
   token,
@@ -48,18 +49,20 @@ export function ContributorConnectionVerifier({
 
   return (
     <div
-      className={`rounded-xl border px-5 py-4 ${
+      className={cn(
+        "rounded-xl border px-5 py-4",
         online
-          ? "border-emerald-200 bg-emerald-50"
-          : "border-ivory-200 bg-white"
-      }`}
+          ? "border-honey-500/30 bg-honey-500/10"
+          : "border-graphite-700 bg-graphite-900/60",
+      )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-start gap-3">
           <span
-            className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${
-              online ? "bg-emerald-500 text-white" : "bg-ivory-200 text-graphite-500"
-            }`}
+            className={cn(
+              "mt-0.5 flex h-8 w-8 items-center justify-center rounded-full",
+              online ? "bg-honey-500 text-graphite-950" : "bg-graphite-800 text-graphite-400",
+            )}
           >
             {online ? (
               <Check className="h-4 w-4" strokeWidth={2.5} />
@@ -70,10 +73,10 @@ export function ContributorConnectionVerifier({
             )}
           </span>
           <div>
-            <p className="text-sm font-medium text-graphite-900">
+            <p className="text-sm font-medium text-ivory-50">
               {online ? "You're online!" : "Waiting for your device…"}
             </p>
-            <p className="mt-0.5 text-xs text-graphite-500">
+            <p className="mt-0.5 text-xs text-graphite-400">
               {online
                 ? `${deviceName ?? "Device"} connected — you can close Terminal.`
                 : "Run the install command above. This updates automatically."}

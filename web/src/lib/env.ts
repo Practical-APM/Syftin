@@ -110,6 +110,29 @@ export const MAX_BATCH_URLS = (() => {
   return 100;
 })();
 
+/**
+ * Platform safety ceiling — stops runaway pagination loops, not a business cap.
+ * Buyers set their own target volume; budget is the practical spend limit.
+ */
+export const PLATFORM_MAX_RECORDS = (() => {
+  const raw = process.env.PLATFORM_MAX_RECORDS?.trim();
+  if (raw) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 5_000_000;
+})();
+
+/** Maximum buyer budget per job/batch (INR) */
+export const MAX_JOB_BUDGET_INR = (() => {
+  const raw = process.env.MAX_JOB_BUDGET_INR?.trim();
+  if (raw) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 500_000;
+})();
+
 /** Phase 4: enterprise API v2, geo-routing, analytics, webhooks */
 export function isPhase4Enabled() {
   if (process.env.NEXT_PUBLIC_PHASE4_ENABLED === "true") return true;

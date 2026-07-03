@@ -76,28 +76,24 @@ export function ContributorSetupForm({
               <FieldHint>Required for automatic payouts.</FieldHint>
             </FieldGroup>
 
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
-              <p className="text-xs font-medium text-emerald-800">
+            <div className="rounded-lg border border-honey-500/20 bg-honey-500/5 p-4 dark:border-honey-500/20 dark:bg-honey-500/5">
+              <p className="text-xs font-medium text-honey-600 dark:text-honey-400">
                 Hardware tier — detected automatically
               </p>
-              <p className="mt-2 text-sm text-graphite-700">
+              <p className="mt-2 text-sm text-graphite-700 dark:text-graphite-300">
                 Current profile:{" "}
-                <strong>{tierLabel(contributor.computeTier)}</strong>
+                <strong className="text-ivory-50">{tierLabel(contributor.computeTier)}</strong>
               </p>
               <Link
                 href="/contributor/help#node-types"
-                className="mt-2 inline-block text-xs font-medium text-emerald-700 hover:text-emerald-600"
+                className="mt-2 inline-block text-xs font-medium text-honey-600 hover:text-honey-500 dark:text-honey-400 dark:hover:text-honey-300"
               >
                 Learn about Scout, Ranger, and Titan →
               </Link>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
-            {saved && (
-              <p className="text-sm text-emerald-600">Profile saved.</p>
-            )}
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {saved && <p className="text-sm text-honey-400">Profile saved.</p>}
 
             <Button type="submit" disabled={saving}>
             {saving ? (

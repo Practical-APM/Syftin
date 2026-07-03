@@ -44,20 +44,20 @@ export function ContributorResourceTelemetry() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl animate-pulse rounded-xl border border-ivory-200 bg-ivory-50/50 p-6">
-        <div className="h-4 w-32 rounded bg-ivory-200" />
-        <div className="mt-4 h-16 rounded bg-ivory-200" />
+      <div className="max-w-2xl animate-pulse rounded-xl border border-graphite-700 bg-graphite-900/40 p-6">
+        <div className="h-4 w-32 rounded bg-graphite-800" />
+        <div className="mt-4 h-16 rounded bg-graphite-800" />
       </div>
     );
   }
 
   if (online.length === 0) {
     return (
-      <div className="max-w-2xl rounded-xl border border-amber-200 bg-amber-50/80 p-5 text-sm text-amber-900">
+      <div className="max-w-2xl rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-200">
         <p className="font-medium">No devices reporting live telemetry</p>
-        <p className="mt-1 text-amber-800">
+        <p className="mt-1 text-amber-200/80">
           Start your node app from{" "}
-          <a href="/contributor/download" className="underline">
+          <a href="/contributor/download" className="text-honey-400 underline">
             Install
           </a>{" "}
           — temperature and pause status appear here within a few seconds.
@@ -68,7 +68,7 @@ export function ContributorResourceTelemetry() {
 
   return (
     <div className="max-w-2xl space-y-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-graphite-500">
+      <p className="text-xs font-medium uppercase tracking-wide text-graphite-400">
         Live device health
       </p>
       {online.map((node) => {
@@ -80,16 +80,16 @@ export function ContributorResourceTelemetry() {
         return (
           <div
             key={node.id}
-            className="rounded-xl border border-ivory-200 bg-white p-4 shadow-sm"
+            className="rounded-xl border border-graphite-700 bg-graphite-900/60 p-4"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-graphite-900">{node.machine_label}</p>
+              <p className="font-medium text-ivory-50">{node.machine_label}</p>
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                   t?.work_allowed && !stale
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-800",
+                    ? "bg-honey-500/15 text-honey-400"
+                    : "bg-amber-500/15 text-amber-400",
                 )}
               >
                 {stale ? "Stale" : t?.work_allowed ? "Working" : "Paused"}
@@ -97,7 +97,7 @@ export function ContributorResourceTelemetry() {
             </div>
 
             {t && (
-              <div className="mt-3 grid gap-2 text-xs text-graphite-600 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 text-xs text-graphite-400 sm:grid-cols-2">
                 <Stat
                   icon={Thermometer}
                   label="Temperature"
@@ -123,11 +123,11 @@ export function ContributorResourceTelemetry() {
                   value={t.connection_metered ? "Metered" : "Unmetered"}
                 />
                 {t.pause_reason && (
-                  <p className="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
+                  <p className="sm:col-span-2 rounded-lg bg-amber-500/10 px-3 py-2 text-amber-200">
                     {PAUSE_REASON_LABELS[t.pause_reason] ?? t.pause_reason}
                   </p>
                 )}
-                <p className="sm:col-span-2 text-[10px] text-graphite-400">
+                <p className="sm:col-span-2 text-[10px] text-graphite-500">
                   Profile: {t.profile ?? "—"} · RAM {t.ram_used_mb ?? 0}/
                   {t.ram_limit_mb ?? 0} MB
                   {t.gpu_vram_limit_gb != null && t.gpu_vram_limit_gb > 0
@@ -157,13 +157,11 @@ function Stat({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-ivory-50 px-3 py-2">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-graphite-400" />
+    <div className="flex items-center gap-2 rounded-lg bg-graphite-800/60 px-3 py-2">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-graphite-500" />
       <div>
-        <p className="text-[10px] uppercase tracking-wide text-graphite-400">
-          {label}
-        </p>
-        <p className="font-medium text-graphite-800">{value}</p>
+        <p className="text-[10px] uppercase tracking-wide text-graphite-500">{label}</p>
+        <p className="font-medium text-graphite-200">{value}</p>
       </div>
     </div>
   );

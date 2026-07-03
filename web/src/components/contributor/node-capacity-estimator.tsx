@@ -36,7 +36,7 @@ export function NodeCapacityEstimator() {
           <select
             value={os}
             onChange={(e) => setOs(e.target.value as CalculatorOs)}
-            className="w-full rounded-lg border border-graphite-700 bg-graphite-900 p-2.5 text-sm text-honey-300 focus:border-honey-500 focus:outline-none"
+            className="app-input"
           >
             <option value="macos-m">macOS (Apple Silicon M1/M2/M3)</option>
             <option value="linux-nv">Linux / Windows (NVIDIA GPU)</option>
@@ -51,7 +51,7 @@ export function NodeCapacityEstimator() {
           <select
             value={ramGb}
             onChange={(e) => setRamGb(Number(e.target.value))}
-            className="w-full rounded-lg border border-graphite-700 bg-graphite-900 p-2.5 text-sm text-honey-300 focus:border-honey-500 focus:outline-none"
+            className="app-input"
           >
             <option value={8}>8 GB</option>
             <option value={16}>16 GB</option>

@@ -1,0 +1,127 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isSupabaseConfigured } from "@/lib/env";
+
+function todayDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function percentile(sorted: number[], p: number): number {
+  if (!sorted.length) return 0;
+  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+  return Math.round(sorted[Math.max(0, idx)]);
+}
+
+/**
+ * Aggregates yesterday's platform metrics into analytics_snapshots.
+ * Called by the daily analytics cron.
+ */
+export async function captureDailyAnalyticsSnapshots(): Promise<{
+  date: string;
+  metricsWritten: number;
+}> {
+  if (!isSupabaseConfigured()) {
+    return { date: todayDate(), metricsWritten: 0 };
+  }
+
+  const admin = createAdminClient();
+  const snapshotDate = todayDate();
+  const dayStart = `${snapshotDate}T00:00:00Z`;
+  const dayEnd = `${snapshotDate}T23:59:59.999Z`;
+
+  let metricsWritten = 0;
+
+  async function upsert(
+    metricType: string,
+    value: number,
+    dimensions: Record<string, string> = {},
+  ) {
+    const { error } = await admin.from("analytics_snapshots").upsert(
+      {
+        snapshot_date: snapshotDate,
+        metric_type: metricType,
+        dimensions,
+        value,
+      },
+      { onConflict: "snapshot_date,metric_type,dimensions" },
+    );
+    if (!error) metricsWritten++;
+  }
+
+  // Online contributor nodes (latest heartbeat today)
+  const { count: nodeCount } = await admin
+    .from("contributor_nodes")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "online");
+
+  await upsert("node_count", nodeCount ?? 0);
+
+  // Fetch latency + failure rate per domain
+  const { data: tasks } = await admin
+    .from("fetch_tasks")
+    .select("domain, created_at, completed_at, status")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd)
+    .in("status", ["completed", "failed"]);
+
+  const latencyByDomain: Record<string, number[]> = {};
+  const statsByDomain: Record<string, { total: number; failed: number }> = {};
+
+  for (const t of tasks ?? []) {
+    const domain = t.domain as string;
+    if (!domain) continue;
+    if (!latencyByDomain[domain]) latencyByDomain[domain] = [];
+    if (!statsByDomain[domain]) statsByDomain[domain] = { total: 0, failed: 0 };
+    statsByDomain[domain].total++;
+    if (t.status === "failed") statsByDomain[domain].failed++;
+    if (t.status === "completed" && t.created_at && t.completed_at) {
+      const ms =
+        new Date(t.completed_at as string).getTime() -
+        new Date(t.created_at as string).getTime();
+      if (ms > 0) latencyByDomain[domain].push(ms);
+    }
+  }
+
+  for (const [domain, times] of Object.entries(latencyByDomain)) {
+    const sorted = [...times].sort((a, b) => a - b);
+    await upsert("fetch_latency_p50", percentile(sorted, 50), { domain });
+    await upsert("fetch_latency_p95", percentile(sorted, 95), { domain });
+  }
+
+  for (const [domain, { total, failed }] of Object.entries(statsByDomain)) {
+    const rate = total > 0 ? Math.round((failed / total) * 100) : 0;
+    await upsert("domain_failure_rate", rate, { domain });
+  }
+
+  // Credit burn by org
+  const { data: txns } = await admin
+    .from("credit_transactions")
+    .select("organization_id, amount_cents")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd)
+    .eq("kind", "job_charge");
+
+  const burnByOrg: Record<string, number> = {};
+  for (const tx of txns ?? []) {
+    const orgId = tx.organization_id as string;
+    if (!orgId) continue;
+    burnByOrg[orgId] =
+      (burnByOrg[orgId] ?? 0) + Math.abs(Number(tx.amount_cents ?? 0));
+  }
+
+  for (const [orgId, paise] of Object.entries(burnByOrg)) {
+    await upsert("credit_burn", paise, { org_id: orgId });
+  }
+
+  // Batch shard throughput
+  const { data: shards } = await admin
+    .from("jobs")
+    .select("status")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd)
+    .not("parent_batch_id", "is", null);
+
+  const completed = (shards ?? []).filter((s) => s.status === "completed").length;
+  await upsert("batch_throughput", completed);
+
+  return { date: snapshotDate, metricsWritten };
+}

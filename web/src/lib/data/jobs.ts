@@ -135,6 +135,8 @@ export type CreateJobInput = {
   example_schema: Record<string, unknown>;
   organization_id?: string;
   required_region?: string;
+  budget_cents?: number;
+  max_records?: number;
 };
 
 export type CreateJobResult =
@@ -195,11 +197,12 @@ export async function createJob(
   const { supabase, orgId } = await getJobsClient(workspace);
 
   if (isCreditsEnforced()) {
+    const chargeAmount = input.budget_cents ?? DEFAULT_JOB_COST_CENTS;
     const balance = await getCreditBalance(workspace);
-    if (balance < DEFAULT_JOB_COST_CENTS) {
+    if (balance < chargeAmount) {
       return {
         success: false,
-        error: `Insufficient credits. Add funds on the Credits page (balance ₹${(balance / 100).toFixed(0)}).`,
+        error: `Insufficient credits. Estimated cost ₹${(chargeAmount / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}.`,
       };
     }
   }
@@ -235,7 +238,11 @@ export async function createJob(
   }
 
   if (isCreditsEnforced() && data) {
-    const charge = await chargeJobCredits(orgId, data.id);
+    const charge = await chargeJobCredits(
+      orgId,
+      data.id,
+      input.budget_cents ?? DEFAULT_JOB_COST_CENTS,
+    );
     if (!charge.ok) {
       await supabase.from("jobs").delete().eq("id", data.id);
       return { success: false, error: charge.error };

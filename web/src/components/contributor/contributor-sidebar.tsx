@@ -39,12 +39,12 @@ export function ContributorSidebar() {
 
   return (
     <aside
-      className="flex h-full shrink-0 flex-col border-r border-emerald-950/40 bg-graphite-950"
+      className="flex h-full shrink-0 flex-col border-r border-graphite-800 bg-graphite-950"
       style={{ width: "var(--app-sidebar-width)" }}
     >
       <div className="flex h-14 items-center border-b border-graphite-800 px-4">
         <SyftinLogo variant="light" />
-        <span className="ml-2 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
+        <span className="ml-2 rounded-md bg-honey-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-honey-400">
           Node
         </span>
       </div>
@@ -66,7 +66,7 @@ export function ContributorSidebar() {
               <Icon
                 className={cn(
                   "h-4 w-4 shrink-0",
-                  active ? "text-emerald-400" : "text-graphite-500 group-hover:text-graphite-400",
+                  active ? "text-honey-400" : "text-graphite-500 group-hover:text-graphite-400",
                 )}
                 strokeWidth={1.75}
               />

@@ -40,12 +40,12 @@ function TerminalMock({ children }: { children: string }) {
       <div className="flex items-center gap-2 border-b border-graphite-800 px-4 py-2.5">
         <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-honey-500/80" />
         <span className="ml-2 text-[10px] font-medium text-graphite-500">
           Terminal
         </span>
       </div>
-      <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-emerald-400/90">
+      <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-honey-400/90">
         {children}
       </pre>
     </div>
@@ -88,14 +88,14 @@ export function ContributorInstallWizard() {
           <div className="space-y-5">
             <Panel>
               <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-semibold text-emerald-700">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10 text-sm font-semibold text-honey-400">
                   1
                 </span>
                 <div>
-                  <p className="font-medium text-graphite-900">Register your device</p>
-                  <p className="mt-1 text-sm text-graphite-500">
+                  <p className="font-medium text-ivory-50">Register your device</p>
+                  <p className="mt-1 text-sm text-graphite-400">
                     Go to{" "}
-                    <Link href="/contributor/nodes" className="text-emerald-700 underline">
+                    <Link href="/contributor/nodes" className="text-honey-400 hover:text-honey-300">
                       My devices
                     </Link>
                     , add a name, and copy the one-time token.
@@ -106,19 +106,19 @@ export function ContributorInstallWizard() {
 
             <Panel>
               <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-semibold text-emerald-700">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10 text-sm font-semibold text-honey-400">
                   2
                 </span>
                 <div className="w-full">
-                  <p className="font-medium text-graphite-900">Paste token (optional)</p>
-                  <p className="mt-1 text-sm text-graphite-500">
+                  <p className="font-medium text-ivory-50">Paste token (optional)</p>
+                  <p className="mt-1 text-sm text-graphite-400">
                     We&apos;ll pre-fill the install command below.
                   </p>
                   <input
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                     placeholder="sftn_…"
-                    className="mt-3 w-full rounded-lg border border-ivory-200 bg-ivory-50 px-3.5 py-2.5 font-mono text-xs focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/15"
+                    className="app-input mt-3 font-mono text-xs"
                   />
                 </div>
               </div>
@@ -126,12 +126,12 @@ export function ContributorInstallWizard() {
 
             <Panel>
               <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-semibold text-emerald-700">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-honey-500/10 text-sm font-semibold text-honey-400">
                   3
                 </span>
                 <div>
-                  <p className="font-medium text-graphite-900">Run one command</p>
-                  <p className="mt-1 text-sm text-graphite-500">
+                  <p className="font-medium text-ivory-50">Run one command</p>
+                  <p className="mt-1 text-sm text-graphite-400">
                     No Go, no git, no code. The installer downloads the node app,
                     sets up a background service, and installs Chromium if your
                     machine qualifies as a Ranger.
@@ -142,7 +142,7 @@ export function ContributorInstallWizard() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex gap-1 rounded-lg border border-ivory-200 bg-ivory-50 p-1">
+            <div className="flex gap-1 rounded-lg border border-graphite-700 bg-graphite-900 p-1">
               {osTabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -150,8 +150,8 @@ export function ContributorInstallWizard() {
                   onClick={() => setOs(tab.id)}
                   className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
                     os === tab.id
-                      ? "bg-white text-graphite-900 shadow-sm"
-                      : "text-graphite-500 hover:text-graphite-700"
+                      ? "bg-honey-500 text-graphite-950 shadow-sm"
+                      : "text-graphite-400 hover:text-ivory-50"
                   }`}
                 >
                   {tab.label}
@@ -161,11 +161,11 @@ export function ContributorInstallWizard() {
 
             {os === "windows" ? (
               <div className="space-y-4">
-                <div className="rounded-xl border border-ivory-200 bg-ivory-50/50 p-5 text-sm text-graphite-700">
-                  <p className="font-medium text-graphite-900">
+                <div className="rounded-xl border border-graphite-700 bg-graphite-900/40 p-5 text-sm text-graphite-300">
+                  <p className="font-medium text-ivory-50">
                     Windows — native installer
                   </p>
-                  <p className="mt-2 text-graphite-600">
+                  <p className="mt-2 text-graphite-400">
                     Run in PowerShell (downloads the node app + Chromium automatically).
                   </p>
                   <TerminalMock>{windowsCmd}</TerminalMock>
@@ -199,9 +199,9 @@ export function ContributorInstallWizard() {
                     </Button>
                   </div>
                 </div>
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-200">
                   <p className="font-medium">Or use Docker</p>
-                  <p className="mt-2 text-amber-800">
+                  <p className="mt-2 text-amber-200/80">
                     If the native installer cannot find a Windows binary yet, install{" "}
                     <a
                       href="https://docs.docker.com/desktop/setup/install/windows-install/"
@@ -265,17 +265,17 @@ export function ContributorInstallWizard() {
               </>
             )}
 
-            <p className="text-xs text-graphite-500">
+            <p className="text-xs text-graphite-400">
               Prefer Docker on {os === "macos" ? "macOS" : "Linux"}?{" "}
               <button
                 type="button"
-                className="text-emerald-700 underline"
+                className="text-honey-400 hover:text-honey-300"
                 onClick={() => copy(dockerCmd, "docker-alt")}
               >
                 Copy Docker command
               </button>
               {copied === "docker-alt" && (
-                <span className="ml-2 text-emerald-600">Copied!</span>
+                <span className="ml-2 text-honey-400">Copied!</span>
               )}
             </p>
           </div>
@@ -285,10 +285,10 @@ export function ContributorInstallWizard() {
 
         <Panel padding="md" className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-graphite-900">
+            <p className="text-sm font-medium text-ivory-50">
               Scout, Ranger, and Titan tiers
             </p>
-            <p className="mt-1 text-xs text-graphite-500">
+            <p className="mt-1 text-xs text-graphite-400">
               Assigned automatically from your hardware scan.
             </p>
           </div>

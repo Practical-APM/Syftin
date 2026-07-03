@@ -13,7 +13,7 @@ import type { Job } from "@/lib/types/jobs";
 function JobsEmptyState() {
   return (
     <Panel className="max-w-md text-center">
-      <p className="text-sm text-graphite-600">No collection jobs yet.</p>
+      <p className="text-sm text-graphite-600 dark:text-graphite-300">No collection jobs yet.</p>
       <Link href="/dashboard/jobs/new" className="mt-4 inline-block">
         <Button size="sm">Create your first job</Button>
       </Link>

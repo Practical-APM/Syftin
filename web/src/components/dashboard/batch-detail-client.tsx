@@ -8,9 +8,21 @@ import { BATCH_STATUS_LABELS, type JobBatch, type Job } from "@/lib/types/jobs";
 import { DashboardHeader, DashboardPage, SchemaPreview } from "@/components/dashboard/sidebar";
 import { JobTable } from "@/components/dashboard/job-table";
 import { Button } from "@/components/ui/button";
+import { formatInrFromCents } from "@/lib/pricing/estimates";
 import { cn } from "@/lib/utils";
 
-// Real-time hooks could be added here similar to use-job-realtime, but we'll stick to basic display for now
+type SyftinMeta = {
+  max_records?: number;
+  budget_cents?: number;
+  effective_max_records?: number;
+};
+
+function readSyftinMeta(schema: Record<string, unknown>): SyftinMeta | null {
+  const raw = schema._syftin;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return raw as SyftinMeta;
+}
+
 export function BatchDetailClient({
   initialBatch,
   initialJobs,
@@ -20,14 +32,15 @@ export function BatchDetailClient({
 }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
+  const syftin = readSyftinMeta(initialBatch.example_schema);
 
   const COLORS: Record<string, string> = {
-    pending: "bg-graphite-500/15 text-graphite-500",
-    queued: "bg-blue-500/15 text-blue-600",
-    processing: "bg-honey-500/15 text-honey-600",
-    validating: "bg-purple-500/15 text-purple-600",
-    completed: "bg-emerald-500/15 text-emerald-600",
-    failed: "bg-red-500/15 text-red-600",
+    pending: "bg-graphite-500/15 text-graphite-300",
+    queued: "bg-blue-500/15 text-blue-400",
+    processing: "bg-honey-500/15 text-honey-400",
+    validating: "bg-purple-500/15 text-purple-400",
+    completed: "bg-honey-500/15 text-honey-400",
+    failed: "bg-red-500/15 text-red-400",
     cancelled: "bg-graphite-500/10 text-graphite-400",
   };
 
@@ -74,27 +87,22 @@ export function BatchDetailClient({
       />
 
       <DashboardPage>
-        <Link
-          href="/dashboard/batches"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-graphite-500 transition-colors hover:text-graphite-900"
-        >
-          <ArrowLeft className="h-4 w-4" />
+        <Link href="/dashboard/batches" className="app-back-link mb-6">
+          <ArrowLeft className="h-4 w-4 shrink-0" />
           Back to batches
         </Link>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <h2 className="text-lg font-medium text-graphite-900">Child Shards</h2>
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_320px]">
+          <div className="min-w-0 space-y-6">
+            <h2 className="text-lg font-medium text-ivory-50">Child shards</h2>
             <JobTable jobs={initialJobs} showDownloadAction={false} />
           </div>
-          <div className="space-y-6">
-            <div className="rounded-xl border border-ivory-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-medium text-graphite-900">
-                Batch details
-              </h3>
+          <div className="min-w-0 space-y-6">
+            <div className="app-panel p-5">
+              <h3 className="text-sm font-medium text-ivory-50">Batch details</h3>
               <dl className="mt-4 space-y-4 text-sm">
                 <div>
-                  <dt className="text-graphite-500">Status</dt>
+                  <dt className="text-graphite-400">Status</dt>
                   <dd className="mt-1">
                     <span
                       className={cn(
@@ -107,25 +115,42 @@ export function BatchDetailClient({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-graphite-500">Progress</dt>
-                  <dd className="mt-1 font-medium text-graphite-900">
+                  <dt className="text-graphite-400">Progress</dt>
+                  <dd className="mt-1 font-medium text-ivory-50">
                     {initialBatch.completed_shards} / {initialBatch.total_shards} completed
                   </dd>
                   {initialBatch.failed_shards > 0 && (
-                    <dd className="mt-1 text-xs text-red-600">
+                    <dd className="mt-1 text-xs text-red-400">
                       {initialBatch.failed_shards} failed
                     </dd>
                   )}
                 </div>
-                <div>
-                  <dt className="text-graphite-500">Pricing Model</dt>
-                  <dd className="mt-1 font-mono text-xs text-graphite-700">
-                    {initialBatch.batch_pricing}
-                  </dd>
-                </div>
+                {syftin?.budget_cents != null && (
+                  <div>
+                    <dt className="text-graphite-400">Budget</dt>
+                    <dd className="mt-1 font-medium text-honey-400">
+                      {formatInrFromCents(syftin.budget_cents)}
+                    </dd>
+                  </div>
+                )}
+                {syftin?.max_records != null && (
+                  <div>
+                    <dt className="text-graphite-400">Target volume per URL</dt>
+                    <dd className="mt-1 font-mono text-xs text-graphite-200">
+                      {syftin.max_records.toLocaleString()} rows
+                    </dd>
+                    {syftin.effective_max_records != null &&
+                      syftin.effective_max_records < syftin.max_records && (
+                        <dd className="mt-1 text-xs text-graphite-500">
+                          Expected ~{syftin.effective_max_records.toLocaleString()} rows
+                          (budget-limited)
+                        </dd>
+                      )}
+                  </div>
+                )}
               </dl>
             </div>
-            
+
             <SchemaPreview schema={initialBatch.example_schema} />
           </div>
         </div>

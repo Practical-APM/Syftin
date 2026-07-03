@@ -3,12 +3,8 @@
 import Link from "next/link";
 import { FadeIn } from "@/components/ui/fade-in";
 import { NodeCapacityEstimator } from "@/components/contributor/node-capacity-estimator";
-import { isPhase2EnabledClient } from "@/lib/env";
 
 export function LandingNodeCapacitySection() {
-  const phase2 = isPhase2EnabledClient();
-  if (!phase2) return null;
-
   return (
     <section
       id="node-calculator"

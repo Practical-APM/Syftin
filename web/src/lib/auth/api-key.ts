@@ -10,6 +10,27 @@ export type ApiKeyAuth =
   | { ok: true; orgId: string; orgName: string; scope: ApiKeyScope }
   | { ok: false; response: NextResponse };
 
+export type ApiKeyAuthOk = Extract<ApiKeyAuth, { ok: true }>;
+
+/** Returns a 403 response when the key scope is insufficient. */
+export function requireApiScope(
+  auth: ApiKeyAuthOk,
+  needed: "read" | "write" | "admin",
+): NextResponse | null {
+  const scopeLevel: Record<ApiKeyScope, number> = {
+    demo: 0,
+    read_only: 1,
+    read_write: 2,
+    admin: 3,
+  };
+  const neededLevel = { read: 1, write: 2, admin: 3 }[needed];
+  if (scopeLevel[auth.scope] >= neededLevel) return null;
+  return NextResponse.json(
+    { error: `API key scope "${auth.scope}" cannot perform this action.` },
+    { status: 403 },
+  );
+}
+
 const API_KEY_PREFIX = "sftn_live_";
 
 declare global {

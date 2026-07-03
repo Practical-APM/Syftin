@@ -471,6 +471,19 @@ export async function deliverJob(
       ? deliverJobToWarehouse(jobId)
       : Promise.resolve({ ok: true, skipped: true }),
   ]);
+
+  // Phase 4: per-event webhook subscriptions + batch lifecycle events
+  const { dispatchJobSubscriptionEvents } = await import(
+    "@/lib/data/job-subscription-events"
+  );
+  const { maybeDispatchBatchWebhookEvents } = await import(
+    "@/lib/data/batch-events"
+  );
+  await Promise.all([
+    dispatchJobSubscriptionEvents(jobId, eventType),
+    maybeDispatchBatchWebhookEvents(jobId),
+  ]);
+
   return { webhook, bucket, sftp, warehouse };
 }
 

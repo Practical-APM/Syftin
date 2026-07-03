@@ -103,12 +103,12 @@ export function ContributorHelpGuide() {
       <DashboardPage>
         <Panel padding="md" className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-honey-400" />
             <div>
-              <p className="text-sm font-medium text-graphite-900">
+              <p className="text-sm font-medium text-ivory-50">
                 Step-by-step install
               </p>
-              <p className="mt-1 text-sm text-graphite-500">
+              <p className="mt-1 text-sm text-graphite-400">
                 Commands, OS tabs, and connection checks live on the Install page.
               </p>
             </div>
@@ -120,20 +120,20 @@ export function ContributorHelpGuide() {
 
         <Panel id="node-types">
           <div className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold text-graphite-900">Node types</h2>
+            <Cpu className="h-5 w-5 text-honey-400" />
+            <h2 className="text-lg font-light text-ivory-50">Node types</h2>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {(Object.keys(TIER_DETAILS) as Array<keyof typeof TIER_DETAILS>).map(
               (tier) => (
                 <div
                   key={tier}
-                  className="rounded-lg border border-ivory-200 p-4"
+                  className="rounded-lg border border-graphite-700 bg-graphite-900/40 p-4"
                 >
-                  <p className="font-medium text-graphite-900">
+                  <p className="font-medium text-ivory-50">
                     {TIER_DETAILS[tier].label}
                   </p>
-                  <p className="mt-1 text-xs text-graphite-600">
+                  <p className="mt-1 text-xs text-graphite-400">
                     {TIER_DETAILS[tier].summary}
                   </p>
                   <p className="mt-2 text-[10px] text-graphite-500">
@@ -147,14 +147,14 @@ export function ContributorHelpGuide() {
 
         <Panel>
           <div className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold text-graphite-900">FAQ</h2>
+            <HelpCircle className="h-5 w-5 text-honey-400" />
+            <h2 className="text-lg font-light text-ivory-50">FAQ</h2>
           </div>
           <dl className="mt-4 space-y-4">
             {faqs.map((item) => (
               <div key={item.q}>
-                <dt className="text-sm font-medium text-graphite-900">{item.q}</dt>
-                <dd className="mt-1 text-sm text-graphite-600">{item.a}</dd>
+                <dt className="text-sm font-medium text-ivory-50">{item.q}</dt>
+                <dd className="mt-1 text-sm text-graphite-400">{item.a}</dd>
               </div>
             ))}
           </dl>
@@ -162,8 +162,8 @@ export function ContributorHelpGuide() {
 
         <Panel>
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold text-graphite-900">
+            <Shield className="h-5 w-5 text-honey-400" />
+            <h2 className="text-lg font-light text-ivory-50">
               Troubleshooting
             </h2>
           </div>
@@ -171,15 +171,15 @@ export function ContributorHelpGuide() {
             {troubleshooting.map((block) => (
               <div
                 key={block.title}
-                className="rounded-lg border border-ivory-200 bg-ivory-50/30 p-4"
+                className="rounded-lg border border-graphite-700 bg-graphite-900/40 p-4"
               >
                 <div className="flex items-center gap-2">
-                  <block.icon className="h-4 w-4 text-emerald-600" />
-                  <p className="text-sm font-medium text-graphite-900">
+                  <block.icon className="h-4 w-4 text-honey-400" />
+                  <p className="text-sm font-medium text-ivory-50">
                     {block.title}
                   </p>
                 </div>
-                <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs text-graphite-600">
+                <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs text-graphite-400">
                   {block.steps.map((s) => (
                     <li key={s}>{s}</li>
                   ))}

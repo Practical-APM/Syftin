@@ -116,14 +116,14 @@ export function ContributorResourcePanel({
                   className={cn(
                     "rounded-lg border px-3 py-3 text-left transition-colors",
                     settings.profile === id
-                      ? "border-emerald-500 bg-emerald-50/80"
-                      : "border-ivory-200 bg-ivory-50/50 hover:border-ivory-300",
+                      ? "border-honey-500 bg-honey-500/10"
+                      : "border-graphite-700 bg-graphite-900/50 hover:border-graphite-600",
                   )}
                 >
-                  <span className="block text-sm font-semibold text-graphite-900">
+                  <span className="block text-sm font-semibold text-ivory-50">
                     {meta.label}
                   </span>
-                  <span className="mt-1 block text-xs text-graphite-500">
+                  <span className="mt-1 block text-xs text-graphite-400">
                     {meta.summary}
                   </span>
                 </button>
@@ -150,7 +150,7 @@ export function ContributorResourcePanel({
                     maxCpuCores: Number(e.target.value),
                   }))
                 }
-                className="mt-2 w-full accent-emerald-600"
+                className="mt-2 w-full accent-honey-500"
               />
             </div>
             <div>
@@ -172,17 +172,17 @@ export function ContributorResourcePanel({
                     maxRamMb: Number(e.target.value),
                   }))
                 }
-                className="mt-2 w-full accent-emerald-600"
+                className="mt-2 w-full accent-honey-500"
               />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-ivory-200 bg-ivory-50/60 p-4">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-graphite-500">
+          <div className="space-y-3 rounded-lg border border-graphite-700 bg-graphite-900/40 p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-graphite-400">
               <Thermometer className="h-3.5 w-3.5" />
               Thermal & activity safeguards
             </p>
-            <label className="flex items-start gap-3 text-sm text-graphite-700">
+            <label className="flex items-start gap-3 text-sm text-graphite-300">
               <input
                 type="checkbox"
                 checked={settings.requireAcPower}
@@ -196,7 +196,7 @@ export function ContributorResourcePanel({
               />
               <span>Require AC power — pause on battery</span>
             </label>
-            <label className="flex items-start gap-3 text-sm text-graphite-700">
+            <label className="flex items-start gap-3 text-sm text-graphite-300">
               <input
                 type="checkbox"
                 checked={settings.pauseOnUserActivity}
@@ -214,7 +214,7 @@ export function ContributorResourcePanel({
                 always enables this.
               </span>
             </label>
-            <label className="flex items-start gap-3 text-sm text-graphite-700">
+            <label className="flex items-start gap-3 text-sm text-graphite-300">
               <input
                 type="checkbox"
                 checked={settings.blockMeteredNetworks}
@@ -231,7 +231,7 @@ export function ContributorResourcePanel({
             <label
               className={cn(
                 "flex items-start gap-3 text-sm",
-                gpuInferenceReady ? "text-graphite-700" : "text-graphite-400",
+                gpuInferenceReady ? "text-graphite-300" : "text-graphite-500",
               )}
             >
               <input
@@ -256,7 +256,7 @@ export function ContributorResourcePanel({
             </label>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-400">{error}</p>}
 
           <div className="flex flex-wrap gap-3">
             <Button type="submit" disabled={saving}>
@@ -272,12 +272,12 @@ export function ContributorResourcePanel({
           </div>
           </form>
 
-          <p className="text-xs text-graphite-500">
+          <p className="text-xs text-graphite-400">
             The node daemon applies PD thermal throttling between tasks, an
             emergency cooldown above {settings.emergencyCutoffC}°C, and profile
             minimum spacing ({profileMeta.minTaskDelaySec}s for {profileMeta.label}
             ). Settings also save locally at{" "}
-            <code className="rounded bg-ivory-100 px-1">~/.syftin/node/</code>.
+            <code className="rounded bg-graphite-800 px-1 text-graphite-300">~/.syftin/node/</code>.
           </p>
         </Panel>
       </DashboardPage>

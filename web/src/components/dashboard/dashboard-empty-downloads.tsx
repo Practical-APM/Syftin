@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export function DashboardEmptyDownloads() {
   return (
     <Panel className="max-w-md text-center">
-      <p className="text-sm text-graphite-600">
+      <p className="text-sm text-graphite-600 dark:text-graphite-300">
         Completed jobs appear here for download.
       </p>
       <Link href="/dashboard/jobs/new" className="mt-4 inline-block">
