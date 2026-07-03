@@ -123,5 +123,54 @@ export async function captureDailyAnalyticsSnapshots(): Promise<{
   const completed = (shards ?? []).filter((s) => s.status === "completed").length;
   await upsert("batch_throughput", completed);
 
+  // Job completion latency — proxy for the Phase 3 "time-to-first-data" goal.
+  const { data: doneJobs } = await admin
+    .from("jobs")
+    .select("created_at, completed_at, status")
+    .gte("completed_at", dayStart)
+    .lte("completed_at", dayEnd)
+    .eq("status", "completed");
+
+  const jobLatencies: number[] = [];
+  for (const j of doneJobs ?? []) {
+    if (j.created_at && j.completed_at) {
+      const ms =
+        new Date(j.completed_at as string).getTime() -
+        new Date(j.created_at as string).getTime();
+      if (ms > 0) jobLatencies.push(ms);
+    }
+  }
+  if (jobLatencies.length) {
+    const sorted = [...jobLatencies].sort((a, b) => a - b);
+    await upsert("job_latency_p50", percentile(sorted, 50));
+    await upsert("job_latency_p95", percentile(sorted, 95));
+  }
+
+  // Revenue-share health (Phase 3 targets: contributor share ≥65% of buyer
+  // charge; ledger reconciliation within ±₹0.01, i.e. delta ~0 paise).
+  const { data: ledger } = await admin
+    .from("platform_ledger")
+    .select("buyer_charge_paise, contributor_payout_paise, platform_net_paise")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd);
+
+  let buyerTotal = 0;
+  let payoutTotal = 0;
+  let netTotal = 0;
+  for (const row of ledger ?? []) {
+    buyerTotal += Number(row.buyer_charge_paise ?? 0);
+    payoutTotal += Number(row.contributor_payout_paise ?? 0);
+    netTotal += Number(row.platform_net_paise ?? 0);
+  }
+  if (buyerTotal > 0) {
+    await upsert(
+      "contributor_share_pct",
+      Math.round((payoutTotal / buyerTotal) * 100),
+    );
+  }
+  if ((ledger ?? []).length > 0) {
+    await upsert("ledger_reconciliation_delta_paise", netTotal - (buyerTotal - payoutTotal));
+  }
+
   return { date: snapshotDate, metricsWritten };
 }

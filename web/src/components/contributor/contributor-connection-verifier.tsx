@@ -6,17 +6,12 @@ import { Check, Loader2, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function ContributorConnectionVerifier({
-  token,
-}: {
-  token: string;
-}) {
+export function ContributorConnectionVerifier() {
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
   const [deviceName, setDeviceName] = useState<string | null>(null);
 
   const check = useCallback(async () => {
-    if (!token.trim()) return;
     setChecking(true);
     try {
       const res = await fetch("/api/contributor/nodes");
@@ -32,20 +27,13 @@ export function ContributorConnectionVerifier({
     } finally {
       setChecking(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
-    if (!token.trim()) {
-      setOnline(false);
-      setDeviceName(null);
-      return;
-    }
     check();
     const id = setInterval(check, 5000);
     return () => clearInterval(id);
-  }, [token, check]);
-
-  if (!token.trim()) return null;
+  }, [check]);
 
   return (
     <div
@@ -78,8 +66,8 @@ export function ContributorConnectionVerifier({
             </p>
             <p className="mt-0.5 text-xs text-graphite-400">
               {online
-                ? `${deviceName ?? "Device"} connected — you can close Terminal.`
-                : "Run the install command above. This updates automatically."}
+                ? `${deviceName ?? "Device"} connected — you can close the installer window.`
+                : "Open the installer you downloaded above. This updates automatically."}
             </p>
           </div>
         </div>

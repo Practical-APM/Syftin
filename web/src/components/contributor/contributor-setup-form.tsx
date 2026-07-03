@@ -21,6 +21,8 @@ export function ContributorSetupForm({
     contributor.displayName ?? "",
   );
   const [upiVpa, setUpiVpa] = useState(contributor.upiVpa ?? "");
+  const [panNumber, setPanNumber] = useState("");
+  const [aadhaarLast4, setAadhaarLast4] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -37,6 +39,8 @@ export function ContributorSetupForm({
       body: JSON.stringify({
         displayName,
         upiVpa,
+        panNumber: panNumber || undefined,
+        aadhaarLast4: aadhaarLast4 || undefined,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -76,6 +80,38 @@ export function ContributorSetupForm({
               <FieldHint>Required for automatic payouts.</FieldHint>
             </FieldGroup>
 
+            <FieldGroup>
+              <FieldLabel>PAN (for 1% TDS)</FieldLabel>
+              <Input
+                value={panNumber}
+                onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                placeholder="ABCDE1234F"
+                maxLength={10}
+              />
+              <FieldHint>
+                {contributor.panVerified
+                  ? "PAN on file — 1% TDS applies to earnings."
+                  : "Without PAN/Aadhaar, 5% TDS is withheld."}
+              </FieldHint>
+            </FieldGroup>
+
+            <FieldGroup>
+              <FieldLabel>Aadhaar (last 4 digits)</FieldLabel>
+              <Input
+                value={aadhaarLast4}
+                onChange={(e) =>
+                  setAadhaarLast4(e.target.value.replace(/\D/g, "").slice(0, 4))
+                }
+                placeholder="1234"
+                maxLength={4}
+              />
+              <FieldHint>
+                {contributor.aadhaarVerified
+                  ? "Aadhaar verified on file."
+                  : "Alternative to PAN for reduced TDS rate."}
+              </FieldHint>
+            </FieldGroup>
+
             <div className="rounded-lg border border-honey-500/20 bg-honey-500/5 p-4 dark:border-honey-500/20 dark:bg-honey-500/5">
               <p className="text-xs font-medium text-honey-600 dark:text-honey-400">
                 Hardware tier — detected automatically
@@ -93,15 +129,31 @@ export function ContributorSetupForm({
             </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
-            {saved && <p className="text-sm text-honey-400">Profile saved.</p>}
+            {saved && (
+              <div className="space-y-3">
+                <p className="text-sm text-honey-400">Profile saved.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/contributor/nodes">
+                    <Button type="button" size="sm" variant="outline">
+                      Register device →
+                    </Button>
+                  </Link>
+                  <Link href="/contributor/download">
+                    <Button type="button" size="sm">
+                      Download installer →
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <Button type="submit" disabled={saving}>
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Save profile"
-            )}
-          </Button>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Save profile"
+              )}
+            </Button>
           </form>
         </Panel>
       </DashboardPage>

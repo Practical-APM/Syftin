@@ -2,12 +2,18 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { Select } from "@/components/ui/input";
 import {
   estimateNodeCapacity,
   type CalculatorOs,
+  type CapacityEstimate,
 } from "@/lib/contributor/resource-settings";
 
-export function NodeCapacityEstimator() {
+export function NodeCapacityEstimator({
+  onTierRecommend,
+}: {
+  onTierRecommend?: (tier: CapacityEstimate["tier"]) => void;
+}) {
   const [os, setOs] = useState<CalculatorOs>("macos-m");
   const [ramGb, setRamGb] = useState(16);
   const [hoursPerDay, setHoursPerDay] = useState(8);
@@ -33,30 +39,28 @@ export function NodeCapacityEstimator() {
           <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-graphite-300">
             Operating system
           </label>
-          <select
+          <Select
             value={os}
             onChange={(e) => setOs(e.target.value as CalculatorOs)}
-            className="app-input"
           >
             <option value="macos-m">macOS (Apple Silicon M1/M2/M3)</option>
             <option value="linux-nv">Linux / Windows (NVIDIA GPU)</option>
             <option value="intel-amd">Any OS (integrated graphics only)</option>
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-graphite-300">
             System RAM
           </label>
-          <select
+          <Select
             value={ramGb}
             onChange={(e) => setRamGb(Number(e.target.value))}
-            className="app-input"
           >
             <option value={8}>8 GB</option>
             <option value={16}>16 GB</option>
             <option value={32}>32 GB or higher</option>
-          </select>
+          </Select>
         </div>
 
         <div>
@@ -86,9 +90,20 @@ export function NodeCapacityEstimator() {
           <span className="text-xs font-medium text-graphite-400">
             Worker classification
           </span>
-          <span className="rounded-full border border-honey-500/20 bg-honey-500/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-widest text-honey-400">
-            {estimate.tierLabel}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-honey-500/20 bg-honey-500/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-widest text-honey-400">
+              {estimate.tierLabel}
+            </span>
+            {onTierRecommend && (
+              <button
+                type="button"
+                onClick={() => onTierRecommend(estimate.tier)}
+                className="text-[10px] font-medium text-honey-400 hover:text-honey-300"
+              >
+                Use on Install →
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-xs font-medium text-graphite-400">Primary tasks</span>

@@ -421,17 +421,23 @@ function ContributorInstallSnapshot() {
         <div className="flex-1 bg-ivory-50/5 p-4">
           <p className="text-xs font-medium text-ivory-50">Install node app</p>
           <p className="mt-0.5 text-[10px] text-graphite-500">
-            Copy your device token from My devices, then run one command.
+            Pick your computer and tier, download one file, open it.
           </p>
           <div className="mt-3 rounded-xl border border-graphite-800 bg-graphite-950 p-3">
             <p className="text-[9px] font-medium uppercase tracking-wider text-graphite-500">
-              One-line install
+              Download installer
             </p>
-            <pre className="mt-2 overflow-x-auto font-mono text-[9px] leading-relaxed text-emerald-400/90">
-              {`curl -fsSL "https://syftin.io/install-node.sh" | bash -s -- \\
-  --token sftn_•••••••• \\
-  --api https://syftin.io`}
-            </pre>
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-honey-500/30 bg-honey-500/10 px-3 py-2">
+              <span className="text-[10px] font-medium text-honey-300">
+                Syftin-Ranger-macOS.zip
+              </span>
+              <span className="rounded bg-honey-500 px-2 py-0.5 text-[9px] font-semibold text-graphite-950">
+                Download
+              </span>
+            </div>
+            <p className="mt-2 text-[9px] text-graphite-500">
+              Open the file, paste your token once — setup runs automatically.
+            </p>
           </div>
           <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2">
             <Cpu className="h-3.5 w-3.5 text-emerald-400" />

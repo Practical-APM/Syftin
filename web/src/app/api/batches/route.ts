@@ -9,6 +9,7 @@ import {
 } from "@/lib/security/rate-limit";
 
 import { validateJobVolumeInput } from "@/lib/pricing/estimates";
+import { getOrgVerified } from "@/lib/data/email-verification";
 
 export async function GET() {
   const auth = await requireApiAuth();
@@ -60,7 +61,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const volume = validateJobVolumeInput({ max_records, budget_cents });
+    const emailVerified = await getOrgVerified(auth.org.orgId);
+    const volume = validateJobVolumeInput({
+      max_records,
+      budget_cents,
+      isVerifiedAccount: emailVerified,
+    });
     if (!volume.ok) {
       return NextResponse.json({ error: volume.error }, { status: 400 });
     }

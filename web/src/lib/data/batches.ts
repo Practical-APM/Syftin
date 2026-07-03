@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionOrg, type SessionOrg } from "@/lib/auth/org";
 import {
   isAuthRequired,
+  isPhase2Enabled,
   isPhase3Enabled,
   isSupabaseConfigured,
 } from "@/lib/env";
@@ -188,13 +189,15 @@ export async function createBatch(
     return { success: false, error: batchError?.message ?? "Failed to create batch" };
   }
 
-  const distributed = process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
+  const distributedBase =
+    isPhase2Enabled() && process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
 
   // Create shards
   for (let i = 0; i < validUrls.length; i++) {
     const { url, domain } = validUrls[i];
     const jobTier = requiredTierForDomain(domain);
     const shardName = `${input.name} - Shard ${i + 1}`;
+    const distributed = distributedBase;
     
     const { data: job, error: jobError } = await admin
       .from("jobs")
@@ -214,7 +217,14 @@ export async function createBatch(
       .single();
 
     if (!jobError && job && distributed) {
-      await createFetchTaskForJob(job.id, url, domain, jobTier);
+      await createFetchTaskForJob(
+        job.id,
+        url,
+        domain,
+        jobTier,
+        undefined,
+        input.example_schema,
+      );
     }
   }
 

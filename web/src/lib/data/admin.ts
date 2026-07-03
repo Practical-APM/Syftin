@@ -13,6 +13,18 @@ export type AdminOverview = {
     nodesTotal: number;
     pendingFetchTasks: number;
   };
+  distributedFetch: {
+    inFlight: number;
+    completed: number;
+    failed: number;
+    expired: number;
+    jobsAwaitingCapacity: number;
+  };
+  governance: {
+    totalDomains: number;
+    domainsPendingReview: number;
+    domainsReviewOverdue: number;
+  };
 };
 
 export type PilotInvite = {
@@ -47,26 +59,49 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         nodesTotal: fleet.stats.nodesTotal,
         pendingFetchTasks: fleet.stats.pendingFetchTasks,
       },
+      distributedFetch: {
+        inFlight: 0,
+        completed: 0,
+        failed: 0,
+        expired: 0,
+        jobsAwaitingCapacity: 0,
+      },
+      governance: {
+        totalDomains: 0,
+        domainsPendingReview: 0,
+        domainsReviewOverdue: 0,
+      },
     };
   }
 
   const supabase = createAdminClient();
 
-  const [orgsRes, jobsRes, invitesRes, heartbeatRes, fleet] = await Promise.all([
-    supabase.from("organizations").select("id", { count: "exact", head: true }),
-    supabase.from("jobs").select("status"),
-    supabase
-      .from("pilot_invites")
-      .select("email", { count: "exact", head: true })
-      .is("accepted_at", null),
-    supabase
-      .from("worker_heartbeats")
-      .select("worker_id, last_seen_at")
-      .order("last_seen_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    getAdminContributorFleet(),
-  ]);
+  const [orgsRes, jobsRes, invitesRes, heartbeatRes, fleet, fetchTasksRes, edgeJobsRes, domainsRes] =
+    await Promise.all([
+      supabase.from("organizations").select("id", { count: "exact", head: true }),
+      supabase.from("jobs").select("status"),
+      supabase
+        .from("pilot_invites")
+        .select("email", { count: "exact", head: true })
+        .is("accepted_at", null),
+      supabase
+        .from("worker_heartbeats")
+        .select("worker_id, last_seen_at")
+        .order("last_seen_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      getAdminContributorFleet(),
+      supabase.from("fetch_tasks").select("status"),
+      supabase
+        .from("jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending")
+        .eq("requires_edge_fetch", true),
+      supabase
+        .from("whitelist_domains")
+        .select("legal_reviewed_at, legal_review_due_at, is_active")
+        .eq("is_active", true),
+    ]);
 
   const jobs: Record<string, number> = {
     completed: 0,
@@ -78,6 +113,24 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   for (const row of jobsRes.data ?? []) {
     const status = row.status as string;
     jobs[status] = (jobs[status] ?? 0) + 1;
+  }
+
+  const fetchCounts = { inFlight: 0, completed: 0, failed: 0, expired: 0 };
+  for (const row of fetchTasksRes.data ?? []) {
+    const status = row.status as string;
+    if (status === "pending" || status === "claimed") fetchCounts.inFlight++;
+    else if (status === "completed") fetchCounts.completed++;
+    else if (status === "failed") fetchCounts.failed++;
+    else if (status === "expired") fetchCounts.expired++;
+  }
+
+  const now = Date.now();
+  let domainsPendingReview = 0;
+  let domainsReviewOverdue = 0;
+  for (const row of domainsRes.data ?? []) {
+    if (!row.legal_reviewed_at) domainsPendingReview++;
+    const due = row.legal_review_due_at as string | null;
+    if (due && new Date(due).getTime() < now) domainsReviewOverdue++;
   }
 
   const lastSeen = heartbeatRes.data?.last_seen_at ?? null;
@@ -97,6 +150,18 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       nodesOnline: fleet.stats.nodesOnline,
       nodesTotal: fleet.stats.nodesTotal,
       pendingFetchTasks: fleet.stats.pendingFetchTasks,
+    },
+    distributedFetch: {
+      inFlight: fetchCounts.inFlight,
+      completed: fetchCounts.completed,
+      failed: fetchCounts.failed,
+      expired: fetchCounts.expired,
+      jobsAwaitingCapacity: edgeJobsRes.count ?? 0,
+    },
+    governance: {
+      totalDomains: (domainsRes.data ?? []).length,
+      domainsPendingReview,
+      domainsReviewOverdue,
     },
   };
 }

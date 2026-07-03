@@ -202,7 +202,7 @@ export function ContributorOverviewClient({
           >
             <p className="text-sm font-medium text-ivory-50">Install node app</p>
             <p className="mt-1 text-xs text-graphite-400">
-              One-line command for macOS, Linux, or Windows.
+              One download for your OS and tier — macOS, Linux, or Windows.
             </p>
           </Link>
           <Link

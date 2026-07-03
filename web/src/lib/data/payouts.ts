@@ -208,6 +208,10 @@ export async function disbursePayoutViaRazorpayX(payoutId: string): Promise<{
     throw new Error("Payout is not pending.");
   }
 
+  const disbursePaise =
+    Number((row as { net_amount_paise?: number | null }).net_amount_paise) ||
+    Math.max(payout.amount_paise - 200, 0);
+
   const contributorRaw = row.contributors as ContributorRow | ContributorRow[];
   const contributor = Array.isArray(contributorRaw)
     ? contributorRaw[0]
@@ -224,7 +228,7 @@ export async function disbursePayoutViaRazorpayX(payoutId: string): Promise<{
 
   const rzPayout = await createRazorpayXUpiPayout({
     fundAccountId,
-    amountPaise: payout.amount_paise,
+    amountPaise: disbursePaise,
     referenceId: payout.id,
     narration: "Syftin earnings",
   });

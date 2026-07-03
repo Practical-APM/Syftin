@@ -71,6 +71,9 @@ export function isPhase2EnabledClient() {
 /** Minimum UPI payout threshold in paise (₹500) */
 export const PAYOUT_THRESHOLD_PAISE = 50_000;
 
+/** RazorpayX flat UPI disbursement fee in paise (₹2) */
+export const RAZORPAYX_PAYOUT_FEE_PAISE = 200;
+
 /** When true, pending contributor payouts are sent via RazorpayX without manual admin click */
 export function isAutoDisbursePayoutsEnabled() {
   return process.env.AUTO_DISBURSE_CONTRIBUTOR_PAYOUTS === "true";

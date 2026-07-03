@@ -1,5 +1,6 @@
 import { DashboardHeader, DashboardPage } from "@/components/dashboard/sidebar";
 import { DomainManager } from "@/components/dashboard/domain-manager";
+import { LegalGovernancePanel } from "@/components/admin/legal-governance-panel";
 import { getWhitelistDomains } from "@/lib/data/domains";
 
 export default async function AdminDomainsPage() {
@@ -13,6 +14,7 @@ export default async function AdminDomainsPage() {
       />
       <DashboardPage>
         <DomainManager initialDomains={domains} readOnly={false} />
+        <LegalGovernancePanel domains={domains} />
       </DashboardPage>
     </>
   );

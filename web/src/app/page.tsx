@@ -10,7 +10,6 @@ import { ProductSnapshots } from "@/components/landing/product-snapshots";
 import { InteractiveDemo } from "@/components/landing/interactive-demo";
 import { PainVisual } from "@/components/landing/pain-visual";
 import { BentoFeatures } from "@/components/landing/bento-features";
-import { HowItWorksScroll } from "@/components/landing/how-it-works-scroll";
 import { UseCasesSection } from "@/components/landing/use-cases-section";
 import { ComplianceSection } from "@/components/landing/compliance-section";
 import { FaqSection } from "@/components/landing/faq-section";
@@ -70,7 +69,6 @@ export default function HomePage() {
         <InteractiveDemo />
         <PainVisual />
         <BentoFeatures />
-        <HowItWorksScroll />
         <UseCasesSection />
         <ComplianceSection />
         <FaqSection />

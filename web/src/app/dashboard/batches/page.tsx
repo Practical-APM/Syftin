@@ -1,13 +1,9 @@
-import { BatchesPageShell } from "@/components/dashboard/batches-list";
-import { getBatches } from "@/lib/data/batches";
+import { redirect } from "next/navigation";
 import { isPhase3Enabled } from "@/lib/env";
-import { notFound } from "next/navigation";
 
-export default async function BatchesPage() {
+export default function BatchesPageRedirect() {
   if (!isPhase3Enabled()) {
-    notFound();
+    redirect("/dashboard/jobs");
   }
-
-  const batches = await getBatches();
-  return <BatchesPageShell batches={batches} />;
+  redirect("/dashboard/jobs?tab=batches");
 }

@@ -1,25 +1,39 @@
-import { DEFAULT_JOB_COST_CENTS, MAX_BATCH_URLS, PLATFORM_MAX_RECORDS, MAX_JOB_BUDGET_INR } from "@/lib/env";
+import { DEFAULT_JOB_COST_CENTS, MAX_BATCH_URLS, PLATFORM_MAX_RECORDS, MAX_JOB_BUDGET_INR, isPhase2Enabled } from "@/lib/env";
+import {
+  type DomainPricing,
+  defaultPricingForDomain,
+  STANDARD_PER_RECORD_PAISE,
+} from "@/lib/pricing/domain-pricing";
+import {
+  buildJobEconomics,
+  economicsToSyftinMeta,
+  resolveRecordLimits,
+  type JobEconomics,
+} from "@/lib/pricing/job-economics";
 
 /** Suggested starting target when the buyer does not specify volume */
 export const DEFAULT_TARGET_RECORDS = 500;
 
-/** Estimated paise per record collected (₹0.10) */
-export const RECORD_UNIT_COST_PAISE = 10;
+/** @deprecated use domain pricing per_record_paise */
+export const RECORD_UNIT_COST_PAISE = STANDARD_PER_RECORD_PAISE;
 
 export const MIN_BUDGET_INR = 5;
+export const MIN_BUDGET_PAISE = MIN_BUDGET_INR * 100;
+
+/** Free-tier (unverified) max rows per job (§3) */
+export const FREE_TIER_MAX_RECORDS = 500;
 
 export type CostEstimate = {
   baseCents: number;
   recordCents: number;
   totalCents: number;
-  /** Buyer-set row target (before platform safety clamp) */
   targetRecords: number;
-  /** Rows affordable within budget (null if no budget set) */
   budgetRecords: number | null;
-  /** Rows we expect to collect: min(target, budget, platform safety) */
   effectiveRecords: number;
   limitedBy: "target" | "budget" | "platform" | null;
   urlCount: number;
+  pricing: DomainPricing;
+  economics: JobEconomics;
 };
 
 export function clampTargetRecords(value: number): number {
@@ -32,102 +46,138 @@ export function clampBudgetInr(value: number): number {
   return Math.min(Math.round(value), MAX_JOB_BUDGET_INR);
 }
 
-/** How many records fit in the buyer's budget after base extraction fee */
-export function recordsAffordableByBudget(
-  budgetInr: number,
-  urlCount = 1,
-): number {
-  const budgetCents = clampBudgetInr(budgetInr) * 100;
-  const baseCents = DEFAULT_JOB_COST_CENTS * urlCount;
-  const remainingCents = Math.max(0, budgetCents - baseCents);
-  const perUrlPaise = Math.floor((remainingCents * 100) / RECORD_UNIT_COST_PAISE);
-  return Math.max(0, Math.floor(perUrlPaise / urlCount));
-}
-
-export function resolveRecordLimits(input: {
-  maxRecords?: number;
-  budgetInr?: number;
-  urlCount?: number;
-}): Pick<
-  CostEstimate,
-  "targetRecords" | "budgetRecords" | "effectiveRecords" | "limitedBy"
-> {
-  const urlCount = Math.max(1, input.urlCount ?? 1);
-  const rawTarget =
-    input.maxRecords != null && Number.isFinite(input.maxRecords)
-      ? Math.round(input.maxRecords)
-      : DEFAULT_TARGET_RECORDS;
-  const targetRecords = clampTargetRecords(rawTarget);
-  const budgetRecords =
-    input.budgetInr != null && input.budgetInr > 0
-      ? recordsAffordableByBudget(input.budgetInr, urlCount)
-      : null;
-
-  let effectiveRecords = targetRecords;
-  if (budgetRecords != null) {
-    effectiveRecords = Math.min(effectiveRecords, budgetRecords);
-  }
-
-  let limitedBy: CostEstimate["limitedBy"] = "target";
-  if (budgetRecords != null && effectiveRecords === budgetRecords && budgetRecords < rawTarget) {
-    limitedBy = "budget";
-  } else if (rawTarget > PLATFORM_MAX_RECORDS) {
-    limitedBy = "platform";
-  }
-
-  return { targetRecords, budgetRecords, effectiveRecords, limitedBy };
-}
-
 export function estimateJobCost(input: {
   maxRecords?: number;
   budgetInr?: number;
+  domain?: string;
+  pricing?: DomainPricing;
 }): CostEstimate {
-  const limits = resolveRecordLimits(input);
-  const baseCents = DEFAULT_JOB_COST_CENTS;
-  const recordCents =
-    Math.round((limits.effectiveRecords * RECORD_UNIT_COST_PAISE) / 100) * 100;
-  let totalCents = baseCents + recordCents;
+  const pricing =
+    input.pricing ??
+    (input.domain ? defaultPricingForDomain(input.domain) : defaultPricingForDomain("standard"));
+  const budgetPaise =
+    input.budgetInr != null && input.budgetInr > 0
+      ? clampBudgetInr(input.budgetInr) * 100
+      : undefined;
 
-  if (input.budgetInr != null && input.budgetInr > 0) {
-    const budgetCents = clampBudgetInr(input.budgetInr) * 100;
-    totalCents = Math.min(totalCents, budgetCents);
-  }
+  const economics = buildJobEconomics({
+    pricing,
+    maxRecords: input.maxRecords,
+    budgetPaise,
+    urlCount: 1,
+    defaultTarget: DEFAULT_TARGET_RECORDS,
+  });
+
+  const recordCents =
+    Math.round(
+      (economics.effectiveRecords * pricing.perRecordPaise) / 100,
+    ) * 100;
 
   return {
-    baseCents,
+    baseCents: pricing.baseFeePaise,
     recordCents,
-    totalCents,
+    totalCents: economics.grossRevenuePaise,
     urlCount: 1,
-    ...limits,
+    pricing,
+    economics,
+    targetRecords: economics.targetRecords,
+    budgetRecords: economics.budgetRecords,
+    effectiveRecords: economics.effectiveRecords,
+    limitedBy: economics.limitedBy,
   };
 }
 
 export function estimateBatchCost(input: {
   urlCount: number;
+  domains?: string[];
   maxRecords?: number;
   budgetInr?: number;
 }): CostEstimate {
   const urlCount = Math.max(1, Math.min(input.urlCount, MAX_BATCH_URLS));
-  const limits = resolveRecordLimits({ ...input, urlCount });
-  const perUrlBase = DEFAULT_JOB_COST_CENTS;
-  const baseCents = perUrlBase * urlCount;
-  const recordCents =
-    Math.round(
-      (limits.effectiveRecords * urlCount * RECORD_UNIT_COST_PAISE) / 100,
-    ) * 100;
-  let totalCents = baseCents + recordCents;
+  const budgetPaise =
+    input.budgetInr != null && input.budgetInr > 0
+      ? clampBudgetInr(input.budgetInr) * 100
+      : undefined;
 
-  if (input.budgetInr != null && input.budgetInr > 0) {
-    const budgetCents = clampBudgetInr(input.budgetInr) * 100;
-    totalCents = Math.min(totalCents, budgetCents);
+  // Sum per-shard economics when domains are known; else use standard pricing × N
+  if (input.domains?.length) {
+    let totalGross = 0;
+    let totalBase = 0;
+    let totalRecord = 0;
+    const shardDomains = input.domains.slice(0, urlCount);
+    const perShardLimits = resolveRecordLimits({
+      maxRecords: input.maxRecords,
+      budgetPaise,
+      urlCount: shardDomains.length,
+      pricing: defaultPricingForDomain(shardDomains[0] ?? "standard"),
+      defaultTarget: DEFAULT_TARGET_RECORDS,
+    });
+
+    for (const domain of shardDomains) {
+      const pricing = defaultPricingForDomain(domain);
+      const shard = buildJobEconomics({
+        pricing,
+        maxRecords: perShardLimits.targetRecords,
+        budgetPaise: undefined,
+        urlCount: 1,
+      });
+      totalGross += shard.grossRevenuePaise;
+      totalBase += pricing.baseFeePaise;
+      totalRecord +=
+        Math.round((shard.effectiveRecords * pricing.perRecordPaise) / 100) *
+        100;
+    }
+
+    if (budgetPaise != null) {
+      totalGross = Math.min(totalGross, budgetPaise);
+    }
+
+    const representative = buildJobEconomics({
+      pricing: defaultPricingForDomain(shardDomains[0] ?? "standard"),
+      maxRecords: input.maxRecords,
+      budgetPaise,
+      urlCount: shardDomains.length,
+    });
+
+    return {
+      baseCents: totalBase,
+      recordCents: totalRecord,
+      totalCents: totalGross,
+      urlCount: shardDomains.length,
+      pricing: representative.pricing,
+      economics: { ...representative, grossRevenuePaise: totalGross },
+      targetRecords: representative.targetRecords,
+      budgetRecords: representative.budgetRecords,
+      effectiveRecords: representative.effectiveRecords,
+      limitedBy: representative.limitedBy,
+    };
   }
 
-  return {
-    baseCents,
-    recordCents,
-    totalCents,
+  const pricing = defaultPricingForDomain("standard");
+  const economics = buildJobEconomics({
+    pricing,
+    maxRecords: input.maxRecords,
+    budgetPaise,
     urlCount,
-    ...limits,
+    defaultTarget: DEFAULT_TARGET_RECORDS,
+  });
+
+  const recordCents =
+    Math.round(
+      (economics.effectiveRecords * urlCount * pricing.perRecordPaise) / 100,
+    ) * 100;
+
+  return {
+    baseCents: pricing.baseFeePaise * urlCount,
+    recordCents,
+    totalCents: economics.grossRevenuePaise,
+    urlCount,
+    pricing,
+    economics,
+    targetRecords: economics.targetRecords,
+    budgetRecords: economics.budgetRecords,
+    effectiveRecords: economics.effectiveRecords,
+    limitedBy: economics.limitedBy,
   };
 }
 
@@ -141,38 +191,135 @@ export function attachJobMeta(
     max_records: number;
     budget_cents: number;
     effective_max_records: number;
+    limited_by?: JobEconomics["limitedBy"];
+    target_url?: string;
+    economics?: JobEconomics;
+    domain?: string;
   },
 ): Record<string, unknown> {
+  const pricing =
+    meta.economics?.pricing ??
+    (meta.domain ? defaultPricingForDomain(meta.domain) : defaultPricingForDomain("standard"));
+
+  const economics =
+    meta.economics ??
+    buildJobEconomics({
+      pricing,
+      maxRecords: meta.max_records,
+      budgetPaise: meta.budget_cents,
+      urlCount: 1,
+    });
+
+  const pagination = meta.target_url
+    ? inferPagination(meta.target_url, meta.effective_max_records)
+    : undefined;
+
   return {
     ...schema,
-    _syftin: {
+    _syftin: economicsToSyftinMeta(economics, {
       max_records: meta.max_records,
       budget_cents: meta.budget_cents,
       effective_max_records: meta.effective_max_records,
-    },
+      limited_by: meta.limited_by ?? economics.limitedBy,
+      pagination,
+      distributed_pagination:
+        Boolean(pagination) && isPhase2Enabled(),
+    }),
   };
+}
+
+const PAGE_PARAMS = ["page", "p", "pg", "pn", "pagenum", "pageno"] as const;
+
+export function inferPagination(
+  targetUrl: string,
+  effectiveRecords: number,
+): {
+  mode: "auto" | "query" | "next_link" | "load_more" | "scroll";
+  param?: string;
+  start?: number;
+  max_pages: number;
+} | undefined {
+  if (effectiveRecords <= 100) return undefined;
+
+  const maxPages = Math.min(
+    200,
+    Math.max(10, Math.ceil(effectiveRecords / 20)),
+  );
+
+  let param: string | undefined;
+  let start = 1;
+
+  try {
+    const url = new URL(targetUrl);
+    for (const candidate of PAGE_PARAMS) {
+      const raw = url.searchParams.get(candidate);
+      if (raw != null && raw !== "") {
+        param = candidate;
+        const n = Number.parseInt(raw, 10);
+        start = Number.isFinite(n) && n > 0 ? n : 1;
+        break;
+      }
+    }
+  } catch {
+    return effectiveRecords > 500
+      ? { mode: "auto", max_pages: maxPages }
+      : undefined;
+  }
+
+  if (!param && effectiveRecords <= 500) return undefined;
+
+  return {
+    mode: "auto",
+    param: param ?? "page",
+    start,
+    max_pages: maxPages,
+  };
+}
+
+export function schemaNeedsHubPagination(
+  schema: Record<string, unknown>,
+  targetUrl: string,
+): boolean {
+  const raw = schema._syftin;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const syftin = raw as Record<string, unknown>;
+    if (syftin.pagination != null) return true;
+    const effective =
+      Number(syftin.effective_max_records) || Number(syftin.max_records) || 0;
+    if (effective > 0) {
+      return inferPagination(targetUrl, effective) != null;
+    }
+  }
+  return inferPagination(targetUrl, DEFAULT_TARGET_RECORDS) != null;
 }
 
 export function validateJobVolumeInput(input: {
   max_records?: unknown;
   budget_cents?: unknown;
+  isVerifiedAccount?: boolean;
 }): { ok: true; maxRecords: number; budgetCents?: number } | { ok: false; error: string } {
   if (input.max_records != null) {
     const n = Number(input.max_records);
     if (!Number.isFinite(n) || n < 1) {
       return { ok: false, error: "Target records must be at least 1." };
     }
-    if (n > PLATFORM_MAX_RECORDS) {
+    const cap = input.isVerifiedAccount === false
+      ? FREE_TIER_MAX_RECORDS
+      : PLATFORM_MAX_RECORDS;
+    if (n > cap) {
       return {
         ok: false,
-        error: `Target records cannot exceed ${PLATFORM_MAX_RECORDS.toLocaleString()} (platform safety limit). Contact support for larger pulls.`,
+        error:
+          input.isVerifiedAccount === false
+            ? `Unverified accounts are limited to ${FREE_TIER_MAX_RECORDS} rows per job. Verify your phone to unlock higher volumes.`
+            : `Target records cannot exceed ${PLATFORM_MAX_RECORDS.toLocaleString()} (platform safety limit). Contact support for larger pulls.`,
       };
     }
   }
 
   if (input.budget_cents != null) {
     const cents = Number(input.budget_cents);
-    if (!Number.isFinite(cents) || cents < MIN_BUDGET_INR * 100) {
+    if (!Number.isFinite(cents) || cents < MIN_BUDGET_PAISE) {
       return { ok: false, error: `Budget must be at least ₹${MIN_BUDGET_INR}.` };
     }
     if (cents > MAX_JOB_BUDGET_INR * 100) {
@@ -197,9 +344,20 @@ export function validateJobVolumeInput(input: {
 
 /** @deprecated use clampTargetRecords */
 export const DEFAULT_MAX_RECORDS = DEFAULT_TARGET_RECORDS;
-
-/** @deprecated use PLATFORM_MAX_RECORDS from env */
 export const MAX_RECORDS_CEILING = PLATFORM_MAX_RECORDS;
-
-/** @deprecated use clampTargetRecords */
 export const clampMaxRecords = clampTargetRecords;
+
+/** @deprecated use domain pricing */
+export function recordsAffordableByBudget(
+  budgetInr: number,
+  urlCount = 1,
+): number {
+  const budgetCents = clampBudgetInr(budgetInr) * 100;
+  const baseCents = DEFAULT_JOB_COST_CENTS * urlCount;
+  const remainingCents = Math.max(0, budgetCents - baseCents);
+  const perUrlPaise = Math.floor((remainingCents * 100) / STANDARD_PER_RECORD_PAISE);
+  return Math.max(0, Math.floor(perUrlPaise / urlCount));
+}
+
+/** @deprecated use resolveRecordLimits from job-economics */
+export { resolveRecordLimits } from "@/lib/pricing/job-economics";

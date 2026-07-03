@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Input = forwardRef<
@@ -29,7 +30,18 @@ export const Select = forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, ...props }, ref) => (
-  <select ref={ref} className={cn("app-input", className)} {...props} />
+  <div className="relative">
+    <select
+      ref={ref}
+      className={cn("app-input app-select", className)}
+      {...props}
+    />
+    <ChevronDown
+      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-graphite-400"
+      strokeWidth={2}
+      aria-hidden
+    />
+  </div>
 ));
 Select.displayName = "Select";
 

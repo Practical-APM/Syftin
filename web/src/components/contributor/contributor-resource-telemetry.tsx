@@ -56,7 +56,7 @@ export function ContributorResourceTelemetry() {
       <div className="max-w-2xl rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-200">
         <p className="font-medium">No devices reporting live telemetry</p>
         <p className="mt-1 text-amber-200/80">
-          Start your node app from{" "}
+          Start your node by downloading the installer from{" "}
           <a href="/contributor/download" className="text-honey-400 underline">
             Install
           </a>{" "}

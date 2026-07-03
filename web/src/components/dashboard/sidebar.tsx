@@ -9,7 +9,6 @@ import {
   FileJson,
   FlaskConical,
   IndianRupee,
-  Layers,
   LogOut,
   Plus,
   Shield,
@@ -22,15 +21,12 @@ import {
 } from "@/components/dashboard/dashboard-session";
 import { PlatformAdminLink } from "@/components/dashboard/platform-admin-link";
 import { cn } from "@/lib/utils";
-import { isDevDashboard, isPhase2EnabledClient, isPhase3EnabledClient } from "@/lib/env";
+import { isDevDashboard, isPhase2EnabledClient } from "@/lib/env";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: Activity, exact: true },
   { href: "/dashboard/jobs", label: "Jobs", icon: TrendingUp },
-  { href: "/dashboard/jobs/new", label: "New job", icon: Plus },
-  ...(isPhase3EnabledClient()
-    ? [{ href: "/dashboard/batches", label: "Batches", icon: Layers }]
-    : []),
+  { href: "/dashboard/jobs/new", label: "New extraction", icon: Plus },
   { href: "/dashboard/exports", label: "Downloads", icon: Download },
   { href: "/dashboard/integrations", label: "Integrations", icon: FileJson },
   ...(isPhase2EnabledClient()
@@ -51,14 +47,8 @@ export function DashboardSidebar() {
       return (
         pathname === "/dashboard/jobs" ||
         (pathname.startsWith("/dashboard/jobs/") &&
-          pathname !== "/dashboard/jobs/new")
-      );
-    }
-    if (href === "/dashboard/batches") {
-      return (
-        pathname === "/dashboard/batches" ||
-        (pathname.startsWith("/dashboard/batches/") &&
-          pathname !== "/dashboard/batches/new")
+          pathname !== "/dashboard/jobs/new") ||
+        pathname.startsWith("/dashboard/batches")
       );
     }
     return pathname === href || pathname.startsWith(`${href}/`);

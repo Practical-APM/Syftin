@@ -16,6 +16,9 @@ export async function PATCH(request: Request) {
   const meteredPause = (body as { meteredPause?: boolean }).meteredPause;
   const computeTier = (body as { computeTier?: string }).computeTier;
 
+  const panNumber = (body as { panNumber?: string }).panNumber;
+  const aadhaarLast4 = (body as { aadhaarLast4?: string }).aadhaarLast4;
+
   if (upiVpa !== undefined && !isValidUpiVpa(upiVpa)) {
     return NextResponse.json({ error: "Invalid UPI ID format." }, { status: 400 });
   }
@@ -34,6 +37,8 @@ export async function PATCH(request: Request) {
       networkMode,
       meteredPause,
       computeTier,
+      panNumber,
+      aadhaarLast4,
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

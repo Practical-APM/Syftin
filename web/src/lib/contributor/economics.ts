@@ -1,7 +1,31 @@
 import type { ComputeTier } from "@/lib/contributor/tier";
 import { DEFAULT_JOB_COST_CENTS } from "@/lib/env";
+import type { TaskType } from "@/lib/types/jobs";
+import {
+  computeTaskRewardPaise as computeTaskRewardWithLock,
+  contributorShareBpsForNode,
+  INTRO_CONTRIBUTOR_SHARE_BPS,
+  EDGE_INFERENCE_BONUS_MULTIPLIER,
+  progressiveMarginBps,
+  workerPayoutCeilingPaise,
+  grossJobRevenuePaise,
+  type TaskRewardInput,
+} from "@/lib/pricing/job-economics";
+import {
+  STANDARD_BASE_FEE_PAISE,
+  defaultPricingForDomain,
+} from "@/lib/pricing/domain-pricing";
 
-/** Buyer job price in paise (credit ledger uses paise; field named `*_cents`). */
+export {
+  INTRO_CONTRIBUTOR_SHARE_BPS,
+  EDGE_INFERENCE_BONUS_MULTIPLIER,
+  progressiveMarginBps,
+  workerPayoutCeilingPaise,
+  grossJobRevenuePaise,
+  contributorShareBpsForNode,
+} from "@/lib/pricing/job-economics";
+
+/** Buyer job price in paise (legacy flat base; domain pricing preferred). */
 export function jobPricePaise(): number {
   const raw = process.env.JOB_PRICE_PAISE?.trim();
   if (raw) {
@@ -11,26 +35,75 @@ export function jobPricePaise(): number {
   return DEFAULT_JOB_COST_CENTS;
 }
 
-/** Contributor share of buyer job price, in basis points (7000 = 70%). */
+/** Introductory contributor share in basis points (7000 = 70%). */
 export function contributorShareBps(): number {
-  const raw = process.env.CONTRIBUTOR_REVENUE_SHARE_BPS?.trim();
-  if (raw) {
-    const n = Number.parseInt(raw, 10);
-    if (Number.isFinite(n) && n > 0 && n <= 10_000) return n;
-  }
-  return 7000;
+  return contributorShareBpsForNode(0);
 }
 
-const TIER_MULTIPLIER: Record<ComputeTier, number> = {
-  scout: 1,
-  ranger: 1.25,
-  titan: 1.5,
+export type JobRewardContext = {
+  domain?: string;
+  domainBaseFeePaise?: number;
+  effectiveRecords?: number;
+  grossRevenuePaise?: number;
+  workerPayoutCeilingPaise?: number;
+  expectedFetchTasks?: number;
+  nodeTasksCompleted?: number;
 };
 
-/** Extra multiplier when the node runs local GPU inference (Ollama). */
-export const EDGE_INFERENCE_BONUS_MULTIPLIER = 1.25;
+function resolveRewardContext(ctx?: JobRewardContext): TaskRewardInput {
+  const pricing = ctx?.domain
+    ? defaultPricingForDomain(ctx.domain)
+    : null;
+  const baseFee =
+    ctx?.domainBaseFeePaise ?? pricing?.baseFeePaise ?? jobPricePaise();
+  const effective = ctx?.effectiveRecords ?? 500;
+  const gross =
+    ctx?.grossRevenuePaise ??
+    grossJobRevenuePaise(
+      {
+        baseFeePaise: baseFee,
+        perRecordPaise: pricing?.perRecordPaise ?? 10,
+      },
+      effective,
+    );
+  const ceiling =
+    ctx?.workerPayoutCeilingPaise ??
+    workerPayoutCeilingPaise(gross, effective);
+  const expectedTasks = ctx?.expectedFetchTasks ?? 1;
 
-/** Minimum platform margin, in basis points (1000 = 10% of job price). */
+  return {
+    tier: "scout",
+    domainBaseFeePaise: baseFee,
+    nodeTasksCompleted: ctx?.nodeTasksCompleted ?? 0,
+    workerPayoutCeilingPaise: ceiling,
+    expectedFetchTasks: expectedTasks,
+  };
+}
+
+export function computeTaskRewardPaise(
+  tier: ComputeTier,
+  taskType: TaskType = "fetch",
+  edgeInference = false,
+  ctx?: JobRewardContext,
+): number {
+  const base = resolveRewardContext(ctx);
+  return computeTaskRewardWithLock({
+    ...base,
+    tier,
+    taskType,
+    edgeInference,
+  });
+}
+
+export function computeFetchRewardPaise(
+  tier: ComputeTier,
+  edgeInference = false,
+  ctx?: JobRewardContext,
+): number {
+  return computeTaskRewardPaise(tier, "fetch", edgeInference, ctx);
+}
+
+/** @deprecated Use progressive margin via workerPayoutCeilingPaise */
 export function minPlatformMarginBps(): number {
   const raw = process.env.MIN_PLATFORM_MARGIN_BPS?.trim();
   if (raw) {
@@ -40,42 +113,9 @@ export function minPlatformMarginBps(): number {
   return 1000;
 }
 
-export function maxContributorPayoutPaise(): number {
-  const floor = Math.round((jobPricePaise() * minPlatformMarginBps()) / 10_000);
-  return Math.max(jobPricePaise() - floor, 0);
-}
-
-import type { TaskType } from "@/lib/types/jobs";
-
-export function computeTaskRewardPaise(
-  tier: ComputeTier,
-  taskType: TaskType = "fetch",
-  edgeInference = false,
-): number {
-  const baseShare = Math.round((jobPricePaise() * contributorShareBps()) / 10_000);
-  const tiered = Math.round(baseShare * (TIER_MULTIPLIER[tier] ?? 1));
-  
-  // Phase 3: distinct task type rewards
-  const TASK_TYPE_MULTIPLIER: Record<TaskType, number> = {
-    fetch: 1.0,
-    parse: 1.5,     // Parsing is heavier
-    validate: 0.5,  // Validating is lightweight
-    enrich: 1.25,
-  };
-  
-  const typed = Math.round(tiered * (TASK_TYPE_MULTIPLIER[taskType] ?? 1.0));
-
-  const withGpu = edgeInference
-    ? Math.round(typed * EDGE_INFERENCE_BONUS_MULTIPLIER)
-    : typed;
-  return Math.min(withGpu, maxContributorPayoutPaise());
-}
-
-export function computeFetchRewardPaise(
-  tier: ComputeTier,
-  edgeInference = false,
-): number {
-  return computeTaskRewardPaise(tier, "fetch", edgeInference);
+export function maxContributorPayoutPaise(jobPrice = jobPricePaise()): number {
+  const floor = Math.round((jobPrice * minPlatformMarginBps()) / 10_000);
+  return Math.max(jobPrice - floor, 0);
 }
 
 export function platformShareBps(): number {
@@ -95,16 +135,34 @@ export function economicsSummary(): {
   titanRewardPaise: number;
   titanGpuRewardPaise: number;
   maxContributorPayoutPaise: number;
+  progressiveMargins: { small: number; medium: number; large: number };
 } {
   const share = contributorShareBps() / 100;
+  const ctx: JobRewardContext = {
+    domainBaseFeePaise: STANDARD_BASE_FEE_PAISE,
+    effectiveRecords: 500,
+    grossRevenuePaise: grossJobRevenuePaise(
+      { baseFeePaise: STANDARD_BASE_FEE_PAISE, perRecordPaise: 10 },
+      500,
+    ),
+    workerPayoutCeilingPaise: workerPayoutCeilingPaise(
+      grossJobRevenuePaise(
+        { baseFeePaise: STANDARD_BASE_FEE_PAISE, perRecordPaise: 10 },
+        500,
+      ),
+      500,
+    ),
+    expectedFetchTasks: 25,
+  };
   return {
     jobPricePaise: jobPricePaise(),
     contributorSharePercent: share,
     platformSharePercent: 100 - share,
-    scoutRewardPaise: computeFetchRewardPaise("scout"),
-    rangerRewardPaise: computeFetchRewardPaise("ranger"),
-    titanRewardPaise: computeFetchRewardPaise("titan"),
-    titanGpuRewardPaise: computeFetchRewardPaise("titan", true),
+    scoutRewardPaise: computeFetchRewardPaise("scout", false, ctx),
+    rangerRewardPaise: computeFetchRewardPaise("ranger", false, ctx),
+    titanRewardPaise: computeFetchRewardPaise("titan", false, ctx),
+    titanGpuRewardPaise: computeFetchRewardPaise("titan", true, ctx),
     maxContributorPayoutPaise: maxContributorPayoutPaise(),
+    progressiveMargins: { small: 10, medium: 20, large: 35 },
   };
 }

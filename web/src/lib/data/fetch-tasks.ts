@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeFetchRewardPaise } from "@/lib/contributor/economics";
+import { readSyftinEconomics } from "@/lib/pricing/read-syftin-economics";
 import {
   type ComputeTier,
   nodeEffectiveTier,
@@ -9,6 +10,7 @@ import { TIER_DETAILS } from "@/lib/contributor/tier";
 import type { TaskType } from "@/lib/types/jobs";
 import { computeTaskRewardPaise } from "@/lib/contributor/economics";
 import { recordNodeSuccessDomain } from "@/lib/data/subscriptions";
+import { hashTaskOutput, resolveConsensusGroup } from "@/lib/data/consensus";
 
 export type FetchTask = {
   id: string;
@@ -26,6 +28,8 @@ export type FetchTask = {
 const MAX_HTML_BYTES = 2_000_000;
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000;
 const PENDING_SCAN_LIMIT = 25;
+/** Anti-hoarding: max concurrent leases per node (revenue_pipeline.md §6) */
+const MAX_CONCURRENT_LEASES = 3;
 
 /** Re-queue fetch tasks stuck in claimed state (crashed node). */
 export async function reclaimStaleFetchClaims(): Promise<number> {
@@ -52,6 +56,7 @@ export async function reclaimStaleFetchClaims(): Promise<number> {
 export async function claimNextFetchTask(
   nodeId: string,
   contributorId: string,
+  clientIp?: string,
 ): Promise<FetchTask | null> {
   await reclaimStaleFetchClaims();
 
@@ -85,8 +90,33 @@ export async function claimNextFetchTask(
 
   if (!node) return null;
 
+  const { count: activeLeases } = await admin
+    .from("fetch_tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("claimed_by_node_id", nodeId)
+    .eq("status", "claimed");
+
+  if ((activeLeases ?? 0) >= MAX_CONCURRENT_LEASES) {
+    return null;
+  }
+
   const nodeTier = nodeEffectiveTier(node.compute_tier, node.detected_tier);
   const playwrightReady = Boolean(node.playwright_ready);
+
+  if (clientIp) {
+    await admin
+      .from("contributor_nodes")
+      .update({ last_seen_ip: clientIp, updated_at: new Date().toISOString() })
+      .eq("id", nodeId);
+  }
+
+  const { data: suspendedDomains } = await admin
+    .from("whitelist_domains")
+    .select("domain")
+    .eq("execution_suspended", true);
+  const suspended = new Set(
+    (suspendedDomains ?? []).map((d: { domain: string }) => d.domain),
+  );
 
   // Fetch the node's region for geo-routing
   const { data: nodeGeo } = await admin
@@ -129,7 +159,49 @@ export async function claimNextFetchTask(
 
   const claimedGroups = new Set(nodeHistory?.map(t => t.consensus_group_id));
 
+  const consensusGroupIds = [
+    ...new Set(
+      pending
+        .map((t) => t.consensus_group_id)
+        .filter((g): g is string => Boolean(g)),
+    ),
+  ];
+  const collusionBlockedGroups = new Set<string>();
+  if (consensusGroupIds.length > 0) {
+    const { data: activeClaims } = await admin
+      .from("fetch_tasks")
+      .select(
+        "consensus_group_id, contributor_nodes!inner(contributor_id, last_seen_ip)",
+      )
+      .in("consensus_group_id", consensusGroupIds)
+      .eq("status", "claimed");
+
+    for (const row of activeClaims ?? []) {
+      const groupId = row.consensus_group_id as string;
+      const nodeRow = row.contributor_nodes as
+        | { contributor_id: string; last_seen_ip: string | null }
+        | { contributor_id: string; last_seen_ip: string | null }[];
+      const meta = Array.isArray(nodeRow) ? nodeRow[0] : nodeRow;
+      if (!meta) continue;
+      if (meta.contributor_id === contributorId) {
+        collusionBlockedGroups.add(groupId);
+      }
+      if (clientIp && meta.last_seen_ip && meta.last_seen_ip === clientIp) {
+        collusionBlockedGroups.add(groupId);
+      }
+    }
+  }
+
   const match = pending.find((task) => {
+    if (suspended.has(task.domain)) return false;
+
+    if (
+      task.consensus_group_id &&
+      collusionBlockedGroups.has(task.consensus_group_id)
+    ) {
+      return false;
+    }
+
     // Consensus: don't let the same node claim both tasks in a group
     if (task.consensus_group_id && claimedGroups.has(task.consensus_group_id)) {
       return false;
@@ -205,22 +277,53 @@ export async function completeFetchTask(
   const admin = createAdminClient();
   const { data: task, error: fetchError } = await admin
     .from("fetch_tasks")
-    .select("id, claimed_by_node_id, status, required_tier, task_type, domain")
+    .select(
+      "id, claimed_by_node_id, status, required_tier, task_type, domain, job_id, consensus_group_id, jobs(example_schema)",
+    )
     .eq("id", taskId)
     .single();
 
   if (fetchError || !task) return { ok: false, error: "Task not found." };
+
+  // Idempotency: already completed — return success (§6)
+  if (task.status === "completed") {
+    return { ok: true };
+  }
+
   if (task.claimed_by_node_id !== nodeId) {
     return { ok: false, error: "Task not claimed by this node." };
   }
   if (task.status !== "claimed") {
-    return { ok: false, error: "Task is not in claimed state." };
+    return {
+      ok: false,
+      error: "Task lease expired or was reassigned — clear local cache.",
+    };
   }
 
   const now = new Date().toISOString();
   const tier = (task.required_tier ?? "scout") as ComputeTier;
   const edgeInference = Boolean(options?.edgeInference);
-  const rewardPaise = computeTaskRewardPaise(tier, task.task_type as TaskType, edgeInference);
+
+  const { data: nodeRow } = await admin
+    .from("contributor_nodes")
+    .select("tasks_completed")
+    .eq("id", nodeId)
+    .single();
+
+  const jobRow = task.jobs as { example_schema?: Record<string, unknown> } | null;
+  const economicsCtx = readSyftinEconomics(
+    jobRow?.example_schema,
+    task.domain,
+  );
+  const rewardPaise = computeTaskRewardPaise(
+    tier,
+    task.task_type as TaskType,
+    edgeInference,
+    {
+      ...economicsCtx,
+      nodeTasksCompleted: Number(nodeRow?.tasks_completed ?? 0),
+    },
+  );
 
   const patch: Record<string, unknown> = {
     status: "completed",
@@ -228,6 +331,10 @@ export async function completeFetchTask(
     html_byte_size: Buffer.byteLength(html, "utf8"),
     completed_at: now,
     reward_paise: rewardPaise,
+    output_hash: hashTaskOutput(html, options?.parsedOutput),
+    ...(task.consensus_group_id
+      ? { consensus_status: "pending" }
+      : {}),
   };
 
   if (options?.parsedOutput !== undefined) {
@@ -239,6 +346,10 @@ export async function completeFetchTask(
   const { error } = await admin.from("fetch_tasks").update(patch).eq("id", taskId);
 
   if (error) return { ok: false, error: error.message };
+
+  if (task.consensus_group_id) {
+    await resolveConsensusGroup(task.consensus_group_id).catch(console.error);
+  }
   
   // Record domain affinity for future SSE push
   await recordNodeSuccessDomain(nodeId, task.domain).catch(console.error);

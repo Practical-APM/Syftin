@@ -1,4 +1,6 @@
 import { getPublicSiteUrl } from "@/lib/env";
+import type { ComputeTier } from "@/lib/contributor/tier";
+import { installerFileName } from "@/lib/contributor/installer-file";
 
 export type InstallOs = "macos" | "linux" | "windows";
 
@@ -6,6 +8,17 @@ export function detectInstallOs(userAgent: string): InstallOs {
   if (/Win/i.test(userAgent)) return "windows";
   if (/Linux/i.test(userAgent)) return "linux";
   return "macos";
+}
+
+/**
+ * Download URL for the one-file installer.
+ * Dev: dynamic API (correct localhost URL). Production: static files from postbuild.
+ */
+export function getInstallerDownloadUrl(os: InstallOs, tier: ComputeTier) {
+  if (process.env.NODE_ENV === "production") {
+    return `/installers/${installerFileName(os, tier)}`;
+  }
+  return `/api/contributor/installer?os=${os}&tier=${tier}`;
 }
 
 export function getInstallScriptUrl(siteUrl = getPublicSiteUrl()) {
@@ -19,14 +32,21 @@ export function getWindowsInstallScriptUrl(siteUrl = getPublicSiteUrl()) {
 export function getWindowsNativeInstallCommand(
   token: string,
   siteUrl = getPublicSiteUrl(),
+  tier?: ComputeTier,
 ) {
   const script = getWindowsInstallScriptUrl(siteUrl);
-  return `powershell -ExecutionPolicy Bypass -Command "irm '${script}' -OutFile \"$env:TEMP\\syftin-install.ps1\"; & \"$env:TEMP\\syftin-install.ps1\" -Token ${token} -ApiUrl ${siteUrl}"`;
+  const tierArg = tier ? ` -Tier ${tier}` : "";
+  return `powershell -ExecutionPolicy Bypass -Command "irm '${script}' -OutFile \"$env:TEMP\\syftin-install.ps1\"; & \"$env:TEMP\\syftin-install.ps1\" -Token ${token} -ApiUrl ${siteUrl}${tierArg}"`;
 }
 
-export function getOneLineInstallCommand(token: string, siteUrl = getPublicSiteUrl()) {
+export function getOneLineInstallCommand(
+  token: string,
+  siteUrl = getPublicSiteUrl(),
+  tier?: ComputeTier,
+) {
   const script = getInstallScriptUrl(siteUrl);
-  return `curl -fsSL "${script}" | bash -s -- --token ${token} --api ${siteUrl}`;
+  const tierArg = tier ? ` --tier ${tier}` : "";
+  return `curl -fsSL "${script}" | bash -s -- --token ${token} --api ${siteUrl}${tierArg}`;
 }
 
 export function getPlaywrightInstallCommand(siteUrl = getPublicSiteUrl()) {
@@ -62,10 +82,10 @@ export const INSTALL_STEPS = [
   },
   {
     id: "install",
-    title: "Run the installer",
+    title: "Download & open the installer",
     href: "/contributor/download",
     description:
-      "One command — no coding. Chromium for JS-heavy sites installs automatically (~150MB).",
+      "One file for your computer. Open it, paste your token once — everything else is automatic.",
   },
   {
     id: "verify",

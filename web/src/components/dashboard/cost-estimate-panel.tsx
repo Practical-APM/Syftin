@@ -59,6 +59,19 @@ export function CostEstimatePanel({
           your budget, or the platform safety limit (
           {PLATFORM_MAX_RECORDS.toLocaleString()} rows/{unit}).
         </p>
+        {estimate.pricing.priceTier === "adversarial" && (
+          <p className="text-amber-600/90 dark:text-amber-400/90">
+            Premium domain pricing (₹{(estimate.pricing.baseFeePaise / 100).toFixed(0)} base + ₹
+            {(estimate.pricing.perRecordPaise / 100).toFixed(2)}/row) — includes dual-node
+            consensus verification.
+          </p>
+        )}
+        {estimate.effectiveRecords > 100 && (
+          <p>
+            Large volumes paginate automatically — each page may be fetched by
+            contributor nodes, then merged on the hub (next links, load-more, or scroll).
+          </p>
+        )}
       </div>
     </div>
   );

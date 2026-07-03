@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CreditPackId } from "@/lib/payments/razorpay-config";
+import type { PaymentMethod } from "@/lib/payments/payment-surcharge";
 
 type RazorpayHandlerResponse = {
   razorpay_order_id: string;
@@ -57,6 +58,8 @@ type OrderResponse = {
   packLabel: string;
   orgName: string;
   customerEmail?: string;
+  surchargePaise?: number;
+  creditPaise?: number;
 };
 
 export function useRazorpayCheckout(onSuccess: () => void) {
@@ -64,7 +67,7 @@ export function useRazorpayCheckout(onSuccess: () => void) {
   const [error, setError] = useState<string | null>(null);
 
   const startCheckout = useCallback(
-    async (packId: CreditPackId) => {
+    async (packId: CreditPackId, paymentMethod: PaymentMethod = "upi") => {
       setPaying(true);
       setError(null);
 
@@ -77,7 +80,7 @@ export function useRazorpayCheckout(onSuccess: () => void) {
         const orderRes = await fetch("/api/payments/razorpay/order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ packId }),
+          body: JSON.stringify({ packId, paymentMethod }),
         });
         const orderData = (await orderRes.json()) as OrderResponse & {
           error?: string;

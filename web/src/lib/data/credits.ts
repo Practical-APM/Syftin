@@ -4,6 +4,7 @@ import {
   requiredTierForDomain,
 } from "@/lib/contributor/fetch-tier";
 import { computeFetchRewardPaise } from "@/lib/contributor/economics";
+import { readSyftinEconomics } from "@/lib/pricing/read-syftin-economics";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionOrg, type SessionOrg } from "@/lib/auth/org";
 import {
@@ -300,17 +301,28 @@ export async function createFetchTaskForJob(
   domain: string,
   jobComputeTier?: string,
   requiredRegion?: string,
+  exampleSchema?: Record<string, unknown>,
 ): Promise<void> {
   if (!isPhase2Enabled() || !isSupabaseConfigured()) return;
 
   const requiredTier = (jobComputeTier ??
     requiredTierForDomain(domain)) as ComputeTier;
 
-  const isHighValue = ["amazon.com", "linkedin.com", "google.com"].includes(domain.toLowerCase());
+  const economicsCtx = readSyftinEconomics(exampleSchema, domain);
+  const rewardCtx = {
+    domain,
+    domainBaseFeePaise: economicsCtx.domainBaseFeePaise,
+    effectiveRecords: economicsCtx.effectiveRecords,
+    grossRevenuePaise: economicsCtx.grossRevenuePaise,
+    workerPayoutCeilingPaise: economicsCtx.workerPayoutCeilingPaise,
+    expectedFetchTasks: economicsCtx.expectedFetchTasks,
+  };
+  const rewardPaise = computeFetchRewardPaise(requiredTier, false, rewardCtx);
+  const requiresConsensus = economicsCtx.requiresConsensus;
 
   const admin = createAdminClient();
-  
-  if (isHighValue) {
+
+  if (requiresConsensus) {
     const groupId = crypto.randomUUID();
     await admin.from("fetch_tasks").insert([
       {
@@ -318,7 +330,8 @@ export async function createFetchTaskForJob(
         target_url: targetUrl,
         domain,
         status: "pending",
-        reward_paise: computeFetchRewardPaise(requiredTier),
+        page_index: 0,
+        reward_paise: rewardPaise,
         required_tier: requiredTier,
         consensus_group_id: groupId,
         required_region: requiredRegion ?? null,
@@ -328,11 +341,12 @@ export async function createFetchTaskForJob(
         target_url: targetUrl,
         domain,
         status: "pending",
-        reward_paise: computeFetchRewardPaise(requiredTier),
+        page_index: 0,
+        reward_paise: rewardPaise,
         required_tier: requiredTier,
         consensus_group_id: groupId,
         required_region: requiredRegion ?? null,
-      }
+      },
     ]);
   } else {
     await admin.from("fetch_tasks").insert({
@@ -340,7 +354,8 @@ export async function createFetchTaskForJob(
       target_url: targetUrl,
       domain,
       status: "pending",
-      reward_paise: computeFetchRewardPaise(requiredTier),
+      page_index: 0,
+      reward_paise: rewardPaise,
       required_tier: requiredTier,
       required_region: requiredRegion ?? null,
     });

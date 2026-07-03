@@ -43,8 +43,8 @@ export function ContributorOnboarding({
             Plug in your laptop in 4 steps
           </h2>
           <p className="mt-2 text-sm text-graphite-300">
-            No coding required. Copy one command, run it, and start earning from
-            approved public-page fetches.
+            No coding required. Download one file, open it, paste your token,
+            and start earning from approved public-page fetches.
           </p>
           <p className="mt-4 text-xs font-medium text-honey-400">
             {doneCount} of 4 complete

@@ -19,6 +19,18 @@ type Overview = {
     nodesTotal: number;
     pendingFetchTasks: number;
   };
+  distributedFetch?: {
+    inFlight: number;
+    completed: number;
+    failed: number;
+    expired: number;
+    jobsAwaitingCapacity: number;
+  };
+  governance?: {
+    totalDomains: number;
+    domainsPendingReview: number;
+    domainsReviewOverdue: number;
+  };
   supabase: boolean;
   ollama: boolean;
   status: string;
@@ -137,10 +149,95 @@ export function AdminOverviewClient() {
                 ))}
               </dl>
             </Panel>
+
+            {data.distributedFetch && (
+              <Panel>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-graphite-900">
+                    Distributed fetch
+                  </h2>
+                  <Link href="/admin/analytics" className="text-xs text-honey-600">
+                    Analytics →
+                  </Link>
+                </div>
+                {data.distributedFetch.jobsAwaitingCapacity > 0 && (
+                  <AlertBanner variant="warning" className="mt-3">
+                    <p className="text-xs text-graphite-700">
+                      {data.distributedFetch.jobsAwaitingCapacity} job(s) waiting for
+                      contributor capacity. The hub self-serves after the fetch
+                      timeout if no node claims the pages.
+                    </p>
+                  </AlertBanner>
+                )}
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <StatCell label="Pages in flight" value={data.distributedFetch.inFlight} />
+                  <StatCell label="Pages completed" value={data.distributedFetch.completed} />
+                  <StatCell
+                    label="Pages failed"
+                    value={data.distributedFetch.failed}
+                    tone={data.distributedFetch.failed > 0 ? "danger" : "default"}
+                  />
+                  <StatCell
+                    label="Pages expired"
+                    value={data.distributedFetch.expired}
+                    tone={data.distributedFetch.expired > 0 ? "warning" : "default"}
+                  />
+                </dl>
+              </Panel>
+            )}
+
+            {data.governance && data.governance.totalDomains > 0 && (
+              <Panel>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-graphite-900">
+                    Legal governance
+                  </h2>
+                  <Link href="/admin/domains" className="text-xs text-honey-600">
+                    Manage domains →
+                  </Link>
+                </div>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <StatCell label="Approved domains" value={data.governance.totalDomains} />
+                  <StatCell
+                    label="Pending legal sign-off"
+                    value={data.governance.domainsPendingReview}
+                    tone={data.governance.domainsPendingReview > 0 ? "warning" : "default"}
+                  />
+                  <StatCell
+                    label="Review overdue"
+                    value={data.governance.domainsReviewOverdue}
+                    tone={data.governance.domainsReviewOverdue > 0 ? "danger" : "default"}
+                  />
+                </dl>
+              </Panel>
+            )}
           </>
         )}
       </DashboardPage>
     </>
+  );
+}
+
+function StatCell({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "warning" | "danger";
+}) {
+  const valueColor =
+    tone === "danger"
+      ? "text-red-600"
+      : tone === "warning"
+        ? "text-amber-600"
+        : "text-graphite-900";
+  return (
+    <div className="rounded-lg bg-ivory-50 px-4 py-3">
+      <p className="text-xs text-graphite-500">{label}</p>
+      <p className={`mt-1 text-xl font-semibold ${valueColor}`}>{value}</p>
+    </div>
   );
 }
 

@@ -13,6 +13,11 @@ type AnalyticsData = {
   domain_failure_rates: { domain: string; failure_rate: number; total: number; failed: number }[];
   credit_burn_by_org: { org_id: string; org_name: string; spend_paise: number; spend_rupees: string }[];
   batch_throughput: { date: string; created: number; completed: number; failed: number }[];
+  platform_health: {
+    job_latency_timeline: { date: string; p50: number; p95: number }[];
+    contributor_share_pct: number;
+    ledger_reconciliation_delta_paise: number;
+  };
 };
 
 function Sparkline({ data, color = "#d4a053" }: { data: number[]; color?: string }) {
@@ -163,6 +168,17 @@ export function AnalyticsClient() {
                 </p>
               </MetricCard>
 
+              <MetricCard title="Job completion time" subtitle="P50 latency (submit → done)" icon={TrendingUp} accent="#22c55e">
+                <Sparkline
+                  data={data.platform_health.job_latency_timeline.map((d) => d.p50)}
+                  color="#22c55e"
+                />
+                <p className="mt-2 text-lg font-light text-ivory-50">
+                  {formatMs(data.platform_health.job_latency_timeline.at(-1)?.p50 ?? 0)}
+                  <span className="ml-1.5 text-sm text-graphite-400">p50 today</span>
+                </p>
+              </MetricCard>
+
               <MetricCard title="Batch throughput" subtitle="Created / completed / failed" icon={Layers} accent="#d4a053">
                 <div className="relative">
                   <Sparkline data={data.batch_throughput.map((d) => d.completed)} />
@@ -226,6 +242,35 @@ export function AnalyticsClient() {
                     <p className="py-2 text-center text-xs text-graphite-500">No data yet</p>
                   )}
                 </div>
+              </MetricCard>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <MetricCard
+                title="Contributor share"
+                subtitle="Payout ÷ buyer charge (target ≥65%)"
+                icon={CreditCard}
+                accent="#22c55e"
+              >
+                <p className="text-2xl font-light text-ivory-50">
+                  {data.platform_health.contributor_share_pct}%
+                </p>
+                <p className="mt-1 text-xs text-graphite-500">
+                  Latest daily snapshot from platform ledger
+                </p>
+              </MetricCard>
+              <MetricCard
+                title="Ledger reconciliation"
+                subtitle="Platform net vs buyer − payout (target ±₹0)"
+                icon={TrendingUp}
+                accent="#d4a053"
+              >
+                <p className="text-2xl font-light text-ivory-50">
+                  ₹{(data.platform_health.ledger_reconciliation_delta_paise / 100).toFixed(2)}
+                </p>
+                <p className="mt-1 text-xs text-graphite-500">
+                  Delta paise — should stay near zero
+                </p>
               </MetricCard>
             </div>
 

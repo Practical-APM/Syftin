@@ -9,7 +9,8 @@ const useCases = [
     icon: ShoppingCart,
     title: "Retail & delivery pricing",
     domain: "blinkit.com · zeptonow.com",
-    bar: "bg-emerald-500",
+    bar: "bg-honey-400",
+    iconClass: "text-honey-400",
     mock: ["Amul Milk — ₹56", "Bread — ₹45", "Eggs — ₹72"],
   },
   {
@@ -17,13 +18,15 @@ const useCases = [
     title: "Company registries",
     domain: "mca.gov.in",
     bar: "bg-honey-500",
+    iconClass: "text-honey-500",
     mock: ["CIN lookup", "Filing date", "Return type"],
   },
   {
     icon: Briefcase,
     title: "Job market signals",
     domain: "naukri.com",
-    bar: "bg-blue-500",
+    bar: "bg-honey-600",
+    iconClass: "text-honey-600 dark:text-honey-400",
     mock: ["React roles ↑", "Bangalore hiring", "Salary bands"],
   },
 ];
@@ -51,7 +54,7 @@ export function UseCasesSection() {
                   <div className={`h-1.5 ${item.bar}`} />
                   <div className="flex flex-1 flex-col p-6">
                     <item.icon
-                      className="h-5 w-5 text-graphite-700 dark:text-graphite-200"
+                      className={`h-5 w-5 ${item.iconClass}`}
                       strokeWidth={1.5}
                     />
                     <h3 className="mt-4 text-lg font-semibold text-graphite-900 dark:text-ivory-50">
@@ -66,7 +69,7 @@ export function UseCasesSection() {
                           key={line}
                           className="flex items-center gap-2 text-sm text-graphite-500 dark:text-graphite-300"
                         >
-                          <span className="h-1 w-1 rounded-full bg-honey-500" />
+                          <span className={`h-1 w-1 rounded-full ${item.bar}`} />
                           {line}
                         </li>
                       ))}

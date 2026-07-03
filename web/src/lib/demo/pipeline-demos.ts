@@ -31,8 +31,9 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   },
   {
     id: "fetch",
-    label: "Fetch page",
-    detail: "Public HTML retrieved via HTTP or Playwright when needed",
+    label: "Fetch pages",
+    detail:
+      "Public pages retrieved — following pagination (load-more, infinite scroll, next-page) up to your set volume limit",
   },
   {
     id: "extract",
@@ -47,12 +48,14 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: "validate",
     label: "Validate",
-    detail: "Field match score computed against your example schema",
+    detail:
+      "Rows deduplicated and scored for field match against your example schema",
   },
   {
     id: "deliver",
     label: "Deliver",
-    detail: "Download JSON/CSV/NDJSON or push via webhook, bucket, or SFTP",
+    detail:
+      "Download JSON/CSV/NDJSON or push via webhook, API, cloud bucket, or SFTP",
   },
 ];
 
@@ -89,8 +92,8 @@ export const DEMO_VERTICALS: Record<
     domain: "blinkit.com",
     jobName: "Mumbai grocery prices — weekly",
     url: "https://blinkit.com/categories/dairy",
-    accent: "text-emerald-400",
-    gradient: "from-emerald-500/15 to-emerald-600/5",
+    accent: "text-honey-400",
+    gradient: "from-honey-500/12 via-graphite-900/0 to-graphite-900/0",
     complianceScore: 98.4,
     recordCount: 3,
     rawSnippet: "Amul Taaza Milk 1L · ₹56 · In stock",
@@ -117,8 +120,8 @@ export const DEMO_VERTICALS: Record<
     domain: "naukri.com",
     jobName: "Bangalore React roles — weekly",
     url: "https://naukri.com/react-developer-jobs",
-    accent: "text-blue-400",
-    gradient: "from-blue-500/15 to-blue-600/5",
+    accent: "text-honey-300",
+    gradient: "from-honey-400/10 via-graphite-900/0 to-graphite-900/0",
     complianceScore: 97.1,
     recordCount: 2,
     rawSnippet: "Frontend Engineer · Razorpay · React, TypeScript",
@@ -139,8 +142,8 @@ export const DEMO_VERTICALS: Record<
     domain: "mca.gov.in",
     jobName: "Annual return filings — Q2",
     url: "https://mca.gov.in/content/mca/global/en/home.html",
-    accent: "text-honey-400",
-    gradient: "from-honey-500/15 to-honey-600/5",
+    accent: "text-honey-500",
+    gradient: "from-honey-600/12 via-graphite-900/0 to-graphite-900/0",
     complianceScore: 99.2,
     recordCount: 1,
     rawSnippet: "Example Pvt Ltd · U12345MH2020PTC123456 · Annual Return",

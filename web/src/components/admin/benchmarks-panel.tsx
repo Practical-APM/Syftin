@@ -63,23 +63,23 @@ export function BenchmarksPanel() {
       />
       <DashboardPage>
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-graphite-500">
+          <div className="flex items-center gap-2 text-sm text-graphite-500 dark:text-graphite-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading benchmark report…
           </div>
         ) : error ? (
           <InlineError message={error} onRetry={load} />
         ) : !report ? (
-          <div className="rounded-xl border border-dashed border-ivory-200 bg-white px-8 py-12 text-center">
+          <div className="rounded-xl border border-dashed border-ivory-200 dark:border-graphite-700 bg-white dark:bg-graphite-900/40 px-8 py-12 text-center">
             <FlaskConical className="mx-auto h-8 w-8 text-graphite-400" />
-            <p className="mt-4 text-sm font-medium text-graphite-900">
+            <p className="mt-4 text-sm font-medium text-graphite-900 dark:text-ivory-50">
               No benchmark report yet
             </p>
-            <p className="mt-2 text-sm text-graphite-500">
+            <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-400">
               {hint ??
                 "Run the benchmark suite on the worker host to measure extraction quality."}
             </p>
-            <pre className="mx-auto mt-6 max-w-md rounded-lg bg-graphite-950 px-4 py-3 text-left font-mono text-xs text-graphite-300">
+            <pre className="mx-auto mt-6 max-w-md rounded-lg border border-graphite-800 bg-graphite-950 px-4 py-3 text-left font-mono text-xs text-graphite-300">
               cd worker{"\n"}bash scripts/run-benchmarks.sh
             </pre>
           </div>
@@ -97,61 +97,58 @@ export function BenchmarksPanel() {
               <StatCard label="Target" value={`${report.target_compliance}%+`} />
             </div>
 
-            <p className="text-xs text-graphite-500">
+            <p className="text-xs text-graphite-500 dark:text-graphite-400">
               Last run: {new Date(report.generated_at).toLocaleString()}
               {source && (
-                <span className="ml-2 rounded-md bg-ivory-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-graphite-500">
+                <span className="ml-2 rounded-md bg-ivory-100 dark:bg-graphite-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-graphite-500 dark:text-graphite-300">
                   {source}
                 </span>
               )}
             </p>
 
-            <div className="overflow-hidden rounded-xl border border-ivory-200 bg-white shadow-sm">
+            <div className="app-data-table overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-ivory-200 bg-ivory-50/80">
-                    <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                  <tr>
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Domain
                     </th>
-                    <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Score
                     </th>
-                    <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Records
                     </th>
-                    <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Fetch
                     </th>
-                    <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Status
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.results.map((row) => (
-                    <tr
-                      key={row.domain}
-                      className="border-b border-ivory-100 last:border-0"
-                    >
+                    <tr key={row.domain}>
                       <td className="px-5 py-4">
-                        <p className="font-medium text-graphite-900">
+                        <p className="font-medium text-graphite-900 dark:text-ivory-50">
                           {row.name}
                         </p>
-                        <p className="text-xs text-graphite-500">{row.domain}</p>
+                        <p className="text-xs text-graphite-500 dark:text-graphite-400">{row.domain}</p>
                       </td>
-                      <td className="px-5 py-4 text-graphite-900">
+                      <td className="px-5 py-4 text-graphite-900 dark:text-ivory-50">
                         {row.error ? "—" : formatPercent(row.compliance_score)}
                       </td>
-                      <td className="px-5 py-4 text-graphite-500">
+                      <td className="px-5 py-4 text-graphite-500 dark:text-graphite-400">
                         {row.error ? "—" : row.record_count}
                       </td>
-                      <td className="px-5 py-4 text-xs text-graphite-500">
+                      <td className="px-5 py-4 text-xs text-graphite-500 dark:text-graphite-400">
                         {row.fetch_method ?? "—"}
                       </td>
                       <td className="px-5 py-4">
                         {row.error ? (
                           <span
-                            className="text-xs text-red-600"
+                            className="text-xs text-red-500 dark:text-red-400"
                             title={row.error}
                           >
                             Failed
@@ -160,7 +157,7 @@ export function BenchmarksPanel() {
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 text-xs font-medium",
-                              row.passed ? "text-emerald-600" : "text-amber-600",
+                              row.passed ? "text-honey-600 dark:text-honey-400" : "text-amber-600 dark:text-amber-400",
                             )}
                           >
                             {row.passed ? (

@@ -21,6 +21,7 @@ import {
   getCreditBalance,
   isCreditsEnforced,
 } from "@/lib/data/credits";
+import { resetFetchTasksForJobRetry } from "@/lib/data/fetch-progress";
 import { sanitizeJobInput } from "@/lib/sanitize";
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
 import type { Job, JobStatus } from "@/lib/types/jobs";
@@ -202,7 +203,7 @@ export async function createJob(
     if (balance < chargeAmount) {
       return {
         success: false,
-        error: `Insufficient credits. Estimated cost ₹${(chargeAmount / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}.`,
+        error: `Insufficient credits. Estimated cost ₹${(chargeAmount / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}. Top up credits or reduce target volume.`,
       };
     }
   }
@@ -234,7 +235,14 @@ export async function createJob(
   }
 
   if (distributed && data) {
-    await createFetchTaskForJob(data.id, target_url, domain, jobTier, input.required_region);
+    await createFetchTaskForJob(
+      data.id,
+      target_url,
+      domain,
+      jobTier,
+      input.required_region,
+      input.example_schema,
+    );
   }
 
   if (isCreditsEnforced() && data) {
@@ -264,7 +272,9 @@ export async function retryJob(
   const { supabase, orgId } = await getJobsClient(workspace);
   const { data: job, error: fetchError } = await supabase
     .from("jobs")
-    .select("id, status")
+    .select(
+      "id, status, target_url, domain, compute_tier, required_region, requires_edge_fetch, example_schema",
+    )
     .eq("id", id)
     .eq("organization_id", orgId)
     .single();
@@ -277,10 +287,30 @@ export async function retryJob(
     return { success: false, error: "Only failed jobs can be retried." };
   }
 
+  if (job.requires_edge_fetch) {
+    await resetFetchTasksForJobRetry(id);
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from("fetch_tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("job_id", id);
+    if (!count) {
+      await createFetchTaskForJob(
+        id,
+        job.target_url,
+        job.domain,
+        job.compute_tier ?? undefined,
+        job.required_region ?? undefined,
+      );
+    }
+  }
+
+  const nextStatus = job.requires_edge_fetch ? "pending" : "queued";
+
   const { error } = await supabase
     .from("jobs")
     .update({
-      status: "queued",
+      status: nextStatus,
       error_message: null,
       completed_at: null,
       compliance_score: null,

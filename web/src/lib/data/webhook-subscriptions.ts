@@ -7,6 +7,7 @@ import { signWebhookPayload } from "@/lib/data/delivery";
 export type WebhookSubscriptionEvent =
   | "job.completed"
   | "job.failed"
+  | "job.partial"
   | "batch.completed"
   | "batch.shard_failed"
   | "batch.cancelled"

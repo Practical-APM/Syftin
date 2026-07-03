@@ -23,6 +23,17 @@ SYFTIN_RELEASE_TAG=v0.1.0
 
 `/releases/*` redirects to GitHub release assets when local files are absent.
 
+## One-file installers (contributor download)
+
+Generated at deploy:
+
+```bash
+cd web
+NEXT_PUBLIC_SITE_URL=https://syftin.io npm run build:installers
+```
+
+See `web/public/installers/README.md`. Served at `/installers/*` in production.
+
 ## Playwright Chromium (no Go required)
 
 Contributors without Go get Chromium via:

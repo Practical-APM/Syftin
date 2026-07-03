@@ -198,7 +198,7 @@ main [id="get-access"] {
     width: 100%;
     border-radius: 0.5rem;
     border: 1px solid var(--card-border);
-    background: var(--card-bg);
+    background-color: var(--card-bg);
     padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -219,7 +219,7 @@ main [id="get-access"] {
 
   .app-input:focus {
     border-color: color-mix(in srgb, var(--honey-500) 50%, var(--card-border));
-    background: var(--card-bg);
+    background-color: var(--card-bg);
     outline: none;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--honey-500) 18%, transparent);
   }
@@ -229,23 +229,20 @@ main [id="get-access"] {
     opacity: 0.6;
   }
 
-  select.app-input {
+  .app-select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2385858a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.65rem center;
-    background-size: 1rem;
-    padding-right: 2.25rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.5rem;
     cursor: pointer;
   }
 
-  html.dark select.app-input {
+  html.dark .app-select {
     background-color: var(--graphite-900);
     color: var(--ivory-50);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a8a8ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
-  select.app-input option {
+  .app-select option {
     background-color: var(--card-bg);
     color: var(--foreground);
   }

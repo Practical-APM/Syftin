@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Globe, FileJson, Download } from "lucide-react";
+import { ArrowRight, Download, Globe, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const steps = [
-  { icon: Globe, label: "Pick a public website" },
-  { icon: FileJson, label: "Paste your field list" },
-  { icon: Download, label: "Download JSON" },
+  { icon: Sparkles, label: "Describe what you need (plain English)" },
+  { icon: Globe, label: "Review URL, fields & budget" },
+  { icon: Download, label: "Download structured JSON" },
 ];
 
 const sampleJson = `[
@@ -53,7 +53,7 @@ export function DashboardOnboarding() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link href="/dashboard/jobs/new">
               <Button size="lg" className="group">
-                Create your first job
+                Start with AI assistant
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </Link>

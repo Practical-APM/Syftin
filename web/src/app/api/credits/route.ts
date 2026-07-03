@@ -5,6 +5,7 @@ import {
   getCreditBalance,
   listCreditTransactions,
 } from "@/lib/data/credits";
+import { getOrgVerified } from "@/lib/data/email-verification";
 import { isPhase2Enabled } from "@/lib/env";
 import { isRazorpayConfigured } from "@/lib/payments/razorpay";
 
@@ -16,15 +17,17 @@ export async function GET() {
     return NextResponse.json({ error: "Phase 2 not enabled." }, { status: 404 });
   }
 
-  const [balance, transactions] = await Promise.all([
+  const [balance, transactions, emailVerified] = await Promise.all([
     getCreditBalance(auth.org),
     listCreditTransactions(auth.org),
+    getOrgVerified(auth.org.orgId),
   ]);
 
   return NextResponse.json({
     balance,
     transactions,
     razorpayEnabled: isRazorpayConfigured(),
+    emailVerified,
   });
 }
 
@@ -41,6 +44,17 @@ export async function POST(request: Request) {
       {
         error:
           "Demo top-up is disabled when Razorpay is configured. Use Pay with Razorpay.",
+      },
+      { status: 403 },
+    );
+  }
+
+  const emailVerified = await getOrgVerified(auth.org.orgId);
+  if (!emailVerified) {
+    return NextResponse.json(
+      {
+        error:
+          "Verify your email before claiming trial credits (anti-sybil protection).",
       },
       { status: 403 },
     );

@@ -215,7 +215,7 @@ export function InteractiveDemo() {
                         {demo.piiField.key}: &quot;{demo.piiField.value}&quot;
                       </p>
                       {showPiiStrike && (
-                        <p className="mt-1 flex items-center gap-1 text-[10px] text-emerald-400">
+                        <p className="mt-1 flex items-center gap-1 text-[10px] text-honey-400">
                           <ShieldCheck className="h-3 w-3" />
                           Redacted by privacy screen
                         </p>
@@ -246,7 +246,7 @@ export function InteractiveDemo() {
                         key="ready"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-1.5 text-xs text-emerald-400"
+                        className="flex items-center gap-1.5 text-xs text-honey-400"
                       >
                         <Download className="h-3 w-3" />
                         Ready · {demo.complianceScore}% field match

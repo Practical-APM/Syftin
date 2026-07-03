@@ -10,6 +10,7 @@ import {
 const ALLOWED_EVENTS: WebhookSubscriptionEvent[] = [
   "job.completed",
   "job.failed",
+  "job.partial",
   "batch.completed",
   "batch.shard_failed",
   "batch.cancelled",

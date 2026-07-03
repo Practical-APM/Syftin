@@ -55,7 +55,7 @@ const personas = [
       "No crypto, no proxy resale, no bypass language",
       "Questions? Read our privacy policy or email hello@syftin.io",
     ],
-    cta: { label: "Read how it works", href: "#how-it-works" },
+    cta: { label: "Read how it works", href: "#demo" },
     accent: "border-ivory-300 bg-ivory-50",
     iconColor: "text-graphite-600",
   },

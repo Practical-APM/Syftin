@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Webhook, Plus, Trash2, Edit2, Loader2, RefreshCw } from "lucide-react";
+import { Webhook, Plus, Trash2, Edit2, Loader2 } from "lucide-react";
 import { Panel } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InlineError } from "@/components/ui/error-fallback";
-import type { WebhookSubscription, WebhookDeliveryLog, WebhookSubscriptionEvent } from "@/lib/data/webhook-subscriptions";
+import type { WebhookSubscription, WebhookSubscriptionEvent } from "@/lib/data/webhook-subscriptions";
 
 const AVAILABLE_EVENTS: { value: WebhookSubscriptionEvent; label: string }[] = [
   { value: "job.completed", label: "Job completed" },
@@ -55,7 +55,7 @@ export function WebhookSubscriptionsPanel() {
   function startEdit(sub: WebhookSubscription) {
     setFormUrl(sub.url);
     setFormDesc(sub.description ?? "");
-    setFormSecret(""); // never pre-fill secret
+    setFormSecret("");
     setFormEvents(new Set(sub.events));
     setEditingId(sub.id);
     setIsCreating(true);
@@ -130,32 +130,38 @@ export function WebhookSubscriptionsPanel() {
 
   return (
     <Panel>
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Webhook className="h-4 w-4 text-honey-600" />
-          <h2 className="text-sm font-semibold text-graphite-900">Event Webhooks</h2>
+          <Webhook className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+          <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Event Webhooks</h2>
         </div>
         {!isCreating && (
           <Button size="sm" variant="outline" onClick={() => setIsCreating(true)}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             Add endpoint
           </Button>
         )}
       </div>
-      <p className="text-sm text-graphite-500 mb-5">
+      <p className="mb-5 text-sm text-graphite-500 dark:text-graphite-300">
         Receive real-time HTTP POST payloads when specific events occur in your workspace.
       </p>
 
       {error && !isCreating && <InlineError message={error} onRetry={load} />}
 
       {isCreating ? (
-        <form onSubmit={handleSave} className="border border-graphite-200 rounded-lg p-5 bg-graphite-50 space-y-4">
-          <h3 className="text-sm font-medium text-graphite-900">{editingId ? "Edit Endpoint" : "New Endpoint"}</h3>
-          
+        <form
+          onSubmit={handleSave}
+          className="space-y-4 rounded-lg border border-graphite-700 bg-graphite-900/40 p-5"
+        >
+          <h3 className="text-sm font-medium text-ivory-50">
+            {editingId ? "Edit endpoint" : "New endpoint"}
+          </h3>
+
           <label className="block text-sm">
-            <span className="font-medium text-graphite-700">Payload URL</span>
+            <span className="font-medium text-graphite-700 dark:text-graphite-200">Payload URL</span>
             <input
-              type="url" required
+              type="url"
+              required
               value={formUrl}
               onChange={(e) => setFormUrl(e.target.value)}
               placeholder="https://api.example.com/syftin-webhook"
@@ -164,8 +170,12 @@ export function WebhookSubscriptionsPanel() {
           </label>
 
           <label className="block text-sm">
-            <span className="font-medium text-graphite-700">Secret token <span className="text-graphite-400 font-normal">(optional)</span></span>
-            <p className="text-xs text-graphite-500 mb-1.5 mt-0.5">Used to sign payloads via X-Syftin-Signature (HMAC-SHA256).</p>
+            <span className="font-medium text-graphite-700 dark:text-graphite-200">
+              Secret token <span className="font-normal text-graphite-400">(optional)</span>
+            </span>
+            <p className="mb-1.5 mt-0.5 text-xs text-graphite-500 dark:text-graphite-400">
+              Used to sign payloads via X-Syftin-Signature (HMAC-SHA256).
+            </p>
             <input
               type="password"
               value={formSecret}
@@ -176,7 +186,9 @@ export function WebhookSubscriptionsPanel() {
           </label>
 
           <label className="block text-sm">
-            <span className="font-medium text-graphite-700">Description <span className="text-graphite-400 font-normal">(optional)</span></span>
+            <span className="font-medium text-graphite-700 dark:text-graphite-200">
+              Description <span className="font-normal text-graphite-400">(optional)</span>
+            </span>
             <input
               type="text"
               value={formDesc}
@@ -187,25 +199,33 @@ export function WebhookSubscriptionsPanel() {
           </label>
 
           <div>
-            <span className="block text-sm font-medium text-graphite-700 mb-2">Events to send</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {AVAILABLE_EVENTS.map(evt => (
-                <label key={evt.value} className="flex items-center gap-2 p-2 border border-graphite-200 rounded-md bg-white text-sm cursor-pointer hover:border-honey-300">
+            <span className="mb-2 block text-sm font-medium text-graphite-700 dark:text-graphite-200">
+              Events to send
+            </span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {AVAILABLE_EVENTS.map((evt) => (
+                <label
+                  key={evt.value}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-graphite-700 bg-graphite-900/60 p-2 text-sm hover:border-honey-500/40"
+                >
                   <input
                     type="checkbox"
                     checked={formEvents.has(evt.value)}
                     onChange={() => toggleEvent(evt.value)}
+                    className="accent-honey-500"
                   />
-                  <span className="text-graphite-700">{evt.label}</span>
+                  <span className="text-graphite-300">{evt.label}</span>
                 </label>
               ))}
             </div>
-            {formEvents.size === 0 && <p className="text-xs text-red-500 mt-1">Select at least one event.</p>}
+            {formEvents.size === 0 && (
+              <p className="mt-1 text-xs text-red-400">Select at least one event.</p>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={saving || formEvents.size === 0}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save endpoint"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save endpoint"}
             </Button>
             <Button type="button" variant="ghost" onClick={resetForm} disabled={saving}>
               Cancel
@@ -214,40 +234,55 @@ export function WebhookSubscriptionsPanel() {
         </form>
       ) : loading ? (
         <div className="flex items-center justify-center p-8 text-graphite-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       ) : subs.length === 0 ? (
-        <div className="text-center p-8 border border-dashed border-graphite-200 rounded-lg text-graphite-500 text-sm">
+        <div className="rounded-lg border border-dashed border-graphite-700 p-8 text-center text-sm text-graphite-400">
           No webhooks configured.
         </div>
       ) : (
         <div className="space-y-3">
-          {subs.map(sub => (
-            <div key={sub.id} className="border border-graphite-200 rounded-lg p-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${sub.enabled ? "bg-emerald-500" : "bg-graphite-300"}`} />
-                  <span className="font-mono text-sm text-graphite-900 break-all">{sub.url}</span>
+          {subs.map((sub) => (
+            <div
+              key={sub.id}
+              className="flex flex-col items-start justify-between gap-4 rounded-lg border border-graphite-700 bg-graphite-900/30 p-4 sm:flex-row sm:items-center"
+            >
+              <div className="min-w-0">
+                <div className="mb-1 flex items-center gap-2">
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${sub.enabled ? "bg-honey-500" : "bg-graphite-600"}`}
+                  />
+                  <span className="break-all font-mono text-sm text-ivory-50">{sub.url}</span>
                 </div>
-                {sub.description && <p className="text-xs text-graphite-500 mb-2">{sub.description}</p>}
+                {sub.description && (
+                  <p className="mb-2 text-xs text-graphite-400">{sub.description}</p>
+                )}
                 <div className="flex flex-wrap gap-1">
-                  {sub.events.map(e => (
-                    <span key={e} className="px-1.5 py-0.5 rounded text-[10px] bg-graphite-100 text-graphite-600 font-mono">
+                  {sub.events.map((e) => (
+                    <span
+                      key={e}
+                      className="rounded bg-graphite-800 px-1.5 py-0.5 font-mono text-[10px] text-graphite-300"
+                    >
                       {e}
                     </span>
                   ))}
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 shrink-0">
+
+              <div className="flex shrink-0 items-center gap-2">
                 <Button size="sm" variant="ghost" onClick={() => toggleEnabled(sub.id, sub.enabled)}>
                   {sub.enabled ? "Disable" : "Enable"}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => startEdit(sub)}>
-                  <Edit2 className="w-3.5 h-3.5" />
+                  <Edit2 className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleDelete(sub.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleDelete(sub.id)}
+                  className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

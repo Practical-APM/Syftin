@@ -4,6 +4,8 @@ import {
   addWhitelistDomain,
   getWhitelistDomains,
   removeWhitelistDomain,
+  clearDomainSuspension,
+  updateWhitelistLegalGovernance,
 } from "@/lib/data/domains";
 import { sanitizeDomainInput } from "@/lib/sanitize";
 import { canManageWhitelist } from "@/lib/env";
@@ -95,6 +97,51 @@ export async function DELETE(request: Request) {
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to remove domain" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+
+  if (!canWriteDomains(auth.email)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const domain = String(body.domain ?? "");
+    if (!domain) {
+      return NextResponse.json({ error: "domain is required" }, { status: 400 });
+    }
+
+    if (body.clear_suspension === true) {
+      const cleared = await clearDomainSuspension(domain);
+      if (!cleared.success) {
+        return NextResponse.json({ error: cleared.error }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    const result = await updateWhitelistLegalGovernance(domain, {
+      legal_basis: body.legal_basis,
+      tos_url: body.tos_url,
+      legal_reviewed_by: body.legal_reviewed_by,
+      legal_reviewed_at: body.legal_reviewed_at,
+      legal_review_due_at: body.legal_review_due_at,
+      legal_notes: body.legal_notes,
+    });
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error ?? "Update failed" }, { status: 400 });
+    }
+
+    return NextResponse.json({ domain: result.entry });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to update legal governance" },
       { status: 500 },
     );
   }

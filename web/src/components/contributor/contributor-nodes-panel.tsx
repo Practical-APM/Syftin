@@ -115,7 +115,7 @@ export function ContributorNodesPanel() {
                 href={`/contributor/download?token=${encodeURIComponent(newToken)}`}
                 className="inline-flex items-center gap-1 rounded-md bg-honey-500 px-2.5 py-1 text-xs font-medium text-graphite-950 hover:bg-honey-400"
               >
-                Next: Install →
+                Download installer →
               </a>
             </div>
           </AlertBanner>
@@ -130,7 +130,7 @@ export function ContributorNodesPanel() {
           <InlineError message={error} onRetry={load} />
         ) : nodes.length === 0 ? (
           <p className="rounded-lg border border-dashed border-graphite-700 bg-graphite-900/40 px-6 py-10 text-center text-sm text-graphite-400">
-            No devices registered yet. Add one above, then run the node app.
+            No devices registered yet. Add one above, then download the installer.
           </p>
         ) : (
           <div className="app-data-table overflow-hidden">

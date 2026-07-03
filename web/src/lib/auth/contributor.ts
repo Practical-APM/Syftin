@@ -18,6 +18,8 @@ export type SessionContributor = {
   meteredPause: boolean;
   isActive: boolean;
   resourceSettings: ContributorResourceSettings;
+  panVerified: boolean;
+  aadhaarVerified: boolean;
 };
 
 const DEMO_CONTRIBUTOR_ID = "c0000000-0000-4000-8000-000000000001";
@@ -47,6 +49,8 @@ export async function getSessionContributor(
       meteredPause: false,
       isActive: true,
       resourceSettings: { ...DEFAULT_RESOURCE_SETTINGS },
+      panVerified: true,
+      aadhaarVerified: false,
     };
   }
 
@@ -63,7 +67,7 @@ export async function getSessionContributor(
   const { data, error } = await admin
     .from("contributors")
     .select(
-      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings",
+      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -81,6 +85,8 @@ export async function getSessionContributor(
     meteredPause: Boolean(data.metered_pause),
     isActive: Boolean(data.is_active),
     resourceSettings: normalizeContributorSettings(data.resource_settings),
+    panVerified: Boolean(data.pan_verified),
+    aadhaarVerified: Boolean(data.aadhaar_verified),
   };
 }
 
@@ -118,7 +124,7 @@ export async function provisionContributorUser(
       display_name: normalizedEmail.split("@")[0],
     })
     .select(
-      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings",
+      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified",
     )
     .single();
 
@@ -144,6 +150,8 @@ export async function provisionContributorUser(
     meteredPause: Boolean(contributor.metered_pause),
     isActive: Boolean(contributor.is_active),
     resourceSettings: normalizeContributorSettings(contributor.resource_settings),
+    panVerified: Boolean(contributor.pan_verified),
+    aadhaarVerified: Boolean(contributor.aadhaar_verified),
   };
 }
 
@@ -159,6 +167,8 @@ export async function updateContributorProfile(
     networkMode?: string;
     meteredPause?: boolean;
     computeTier?: string;
+    panNumber?: string;
+    aadhaarLast4?: string;
   },
 ): Promise<void> {
   const admin = createAdminClient();
@@ -168,6 +178,21 @@ export async function updateContributorProfile(
   if (input.networkMode !== undefined) patch.network_mode = input.networkMode;
   if (input.meteredPause !== undefined) patch.metered_pause = input.meteredPause;
   if (input.computeTier !== undefined) patch.compute_tier = input.computeTier;
+
+  if (input.panNumber !== undefined) {
+    const pan = input.panNumber.trim().toUpperCase();
+    if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
+      throw new Error("Invalid PAN format (e.g. ABCDE1234F).");
+    }
+    patch.pan_verified = pan.length > 0;
+  }
+  if (input.aadhaarLast4 !== undefined) {
+    const last4 = input.aadhaarLast4.replace(/\D/g, "");
+    if (last4 && last4.length !== 4) {
+      throw new Error("Enter last 4 digits of Aadhaar only.");
+    }
+    patch.aadhaar_verified = last4.length === 4;
+  }
 
   const { error } = await admin
     .from("contributors")

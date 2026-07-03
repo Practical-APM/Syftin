@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Syftin edge node — one-command installer (no coding required).
 # Usage:
-#   curl -fsSL "https://YOUR_SITE/install-node.sh" | bash -s -- --token sftn_xxx --api https://YOUR_SITE
+#   curl -fsSL "https://YOUR_SITE/install-node.sh" | bash -s -- --token sftn_xxx --api https://YOUR_SITE --tier ranger
 # Or from this repo:
 #   bash worker/scripts/install-node.sh --token sftn_xxx --api http://localhost:3000
 
@@ -11,8 +11,10 @@ SYFTIN_VERSION="${SYFTIN_VERSION:-0.1.0}"
 INSTALL_DIR="${SYFTIN_INSTALL_DIR:-$HOME/.syftin/node}"
 PLAYWRIGHT_VERSION="${PLAYWRIGHT_GO_VERSION:-v0.5700.1}"
 PLAYWRIGHT_DRIVER_VERSION="${PLAYWRIGHT_DRIVER_VERSION:-1.57.0}"
+OLLAMA_EDGE_MODEL="${OLLAMA_MODEL:-qwen2.5:3b-instruct-q4_K_M}"
 TOKEN=""
 API_URL=""
+TIER=""
 
 usage() {
   cat <<'EOF'
@@ -23,13 +25,14 @@ Required:
   --api URL        Your Syftin site URL (e.g. https://syftin.io)
 
 Optional:
+  --tier TIER      scout | ranger | titan (installs matching components)
   --dir PATH       Install directory (default: ~/.syftin/node)
   --no-service     Skip background service setup
   --docker         Use Docker instead of native binary
 
 Example:
   curl -fsSL "https://syftin.io/install-node.sh" | bash -s -- \
-    --token sftn_abc123 --api https://syftin.io
+    --token sftn_abc123 --api https://syftin.io --tier ranger
 EOF
 }
 
@@ -37,6 +40,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --token) TOKEN="$2"; shift 2 ;;
     --api) API_URL="${2%/}"; shift 2 ;;
+    --tier) TIER="$(echo "$2" | tr '[:upper:]' '[:lower:]')"; shift 2 ;;
     --dir) INSTALL_DIR="$2"; shift 2 ;;
     --no-service) NO_SERVICE=1; shift ;;
     --docker) USE_DOCKER=1; shift ;;
@@ -44,6 +48,11 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1"; usage; exit 1 ;;
   esac
 done
+
+# Scout is HTTP-only — no browser needed. Ranger/Titan render JavaScript pages.
+if [[ "$TIER" == "scout" ]]; then
+  export SKIP_PLAYWRIGHT=1
+fi
 
 if [[ -z "$TOKEN" || -z "$API_URL" ]]; then
   echo "Error: --token and --api are required."
@@ -185,8 +194,33 @@ NODE_TOKEN=${TOKEN}
 SYFTIN_API_URL=${API_URL}
 NODE_POLL_INTERVAL=10s
 EOF
+  case "$TIER" in
+    scout) echo "FETCH_MODE=http" >> "$INSTALL_DIR/config.env" ;;
+    titan)
+      {
+        echo "OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://127.0.0.1:11434}"
+        echo "OLLAMA_MODEL=${OLLAMA_EDGE_MODEL}"
+      } >> "$INSTALL_DIR/config.env"
+      ;;
+  esac
   chmod 600 "$INSTALL_DIR/config.env"
   ok "Wrote $INSTALL_DIR/config.env"
+}
+
+setup_ollama_edge() {
+  # Titan tier runs schema extraction locally via Ollama. Best-effort:
+  # pull the edge model if Ollama is present, otherwise leave clear guidance.
+  if command -v ollama >/dev/null 2>&1; then
+    log "Preparing local GPU model (${OLLAMA_EDGE_MODEL})…"
+    if ollama pull "${OLLAMA_EDGE_MODEL}" >/dev/null 2>&1; then
+      ok "Edge model ready — this device can extract on-device"
+    else
+      warn "Could not pull ${OLLAMA_EDGE_MODEL}. Run: ollama pull ${OLLAMA_EDGE_MODEL}"
+    fi
+  else
+    warn "Ollama not found — install it from https://ollama.com to enable Titan on-device extraction."
+    warn "The node will still earn as a fetcher without it."
+  fi
 }
 
 install_native_binary() {
@@ -291,6 +325,9 @@ main() {
 
   install_native_binary
   install_playwright
+  if [[ "$TIER" == "titan" ]]; then
+    setup_ollama_edge
+  fi
   write_config
 
   if [[ "${NO_SERVICE:-}" != "1" && -x "$INSTALL_DIR/syftin-node" ]]; then

@@ -76,6 +76,14 @@ export function validateProductionEnv(): EnvIssue[] {
     });
   }
 
+  if (!process.env.GEMINI_API_KEY?.trim() && !process.env.AI_DRAFT_BASE_URL?.trim()) {
+    issues.push({
+      level: "warn",
+      message:
+        "No AI draft provider configured — AI job setup uses demo drafts (set GEMINI_API_KEY or AI_DRAFT_BASE_URL).",
+    });
+  }
+
   if (!process.env.HEALTH_CHECK_SECRET?.trim()) {
     issues.push({
       level: "warn",

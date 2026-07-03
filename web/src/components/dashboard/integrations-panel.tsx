@@ -17,6 +17,7 @@ import { DashboardHeader, DashboardPage } from "@/components/dashboard/sidebar";
 import { Panel } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InlineError } from "@/components/ui/error-fallback";
+import { FieldGroup, FieldHint, FieldLabel, Select } from "@/components/ui/input";
 import { WebhookSubscriptionsPanel } from "@/components/dashboard/webhook-subscriptions-panel";
 import type { OrgDeliveryConfig } from "@/lib/data/delivery";
 import type { BucketDeliveryConfig } from "@/lib/data/bucket-delivery";
@@ -296,7 +297,7 @@ export function IntegrationsPanel() {
       />
       <DashboardPage>
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-graphite-500">
+          <div className="flex items-center gap-2 text-sm text-graphite-500 dark:text-graphite-300 dark:text-graphite-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading…
           </div>
@@ -305,7 +306,7 @@ export function IntegrationsPanel() {
         ) : (
           <>
             {message && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 mb-6">
+              <div className="mb-6 rounded-lg border border-honey-500/25 bg-honey-500/10 px-4 py-3 text-sm text-honey-200">
                 {message}
               </div>
             )}
@@ -314,35 +315,36 @@ export function IntegrationsPanel() {
 
             <Panel>
               <div className="flex items-center gap-2">
-                <CloudUpload className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">Bucket push</h2>
+                <CloudUpload className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Bucket push</h2>
               </div>
-              <p className="mt-2 text-sm text-graphite-500">
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Upload completed job exports to your S3 bucket (AWS, Cloudflare R2, MinIO) or
                 Google Cloud Storage. Uses your workspace default export format.
               </p>
               <div className="mt-5 space-y-4">
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
+                <label className="flex items-center gap-2 text-sm text-graphite-700 dark:text-graphite-300">
                   <input
                     type="checkbox"
                     checked={bucketEnabled}
                     onChange={(e) => setBucketEnabled(e.target.checked)}
+                    className="accent-honey-500"
                   />
                   Enable bucket push on job completion
                 </label>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Provider</span>
-                  <select
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Provider</span>
+                  <Select
                     value={bucketProvider}
                     onChange={(e) => setBucketProvider(e.target.value as "s3" | "gcs")}
-                    className="app-input mt-1.5"
+                    className="mt-1.5"
                   >
                     <option value="s3">S3-compatible (AWS, R2, MinIO)</option>
                     <option value="gcs">Google Cloud Storage</option>
-                  </select>
+                  </Select>
                 </label>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Bucket name</span>
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Bucket name</span>
                   <input
                     type="text"
                     value={bucketName}
@@ -352,7 +354,7 @@ export function IntegrationsPanel() {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Object prefix</span>
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Object prefix</span>
                   <input
                     type="text"
                     value={bucketPrefix}
@@ -364,7 +366,7 @@ export function IntegrationsPanel() {
                 {bucketProvider === "s3" ? (
                   <>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">Region</span>
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">Region</span>
                       <input
                         type="text"
                         value={bucketRegion}
@@ -374,7 +376,7 @@ export function IntegrationsPanel() {
                       />
                     </label>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">
                         Custom endpoint{" "}
                         <span className="text-graphite-400">(R2 / MinIO only)</span>
                       </span>
@@ -387,7 +389,7 @@ export function IntegrationsPanel() {
                       />
                     </label>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">
                         Access key ID{" "}
                         {bucket?.hasS3Credentials && (
                           <span className="text-graphite-400">(configured)</span>
@@ -402,7 +404,7 @@ export function IntegrationsPanel() {
                       />
                     </label>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">Secret access key</span>
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">Secret access key</span>
                       <input
                         type="password"
                         value={s3SecretAccessKey}
@@ -415,7 +417,7 @@ export function IntegrationsPanel() {
                 ) : (
                   <>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">GCS project ID</span>
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">GCS project ID</span>
                       <input
                         type="text"
                         value={gcsProjectId}
@@ -425,7 +427,7 @@ export function IntegrationsPanel() {
                       />
                     </label>
                     <label className="block text-sm">
-                      <span className="font-medium text-graphite-700">
+                      <span className="font-medium text-graphite-700 dark:text-graphite-200">
                         Service account JSON{" "}
                         {bucket?.hasGcsCredentials && (
                           <span className="text-graphite-400">(configured)</span>
@@ -460,9 +462,9 @@ export function IntegrationsPanel() {
                     {testingBucket ? "Uploading…" : "Upload test file"}
                   </Button>
                 </div>
-                <p className="text-xs text-graphite-500">
+                <p className="text-xs text-graphite-500 dark:text-graphite-400">
                   Objects land at{" "}
-                  <code className="text-[11px]">
+                  <code className="text-[11px] text-graphite-400">
                     {bucketPrefix || "syftin/"}{"{org_id}"}/{"{job_id}"}/syftin-{"{job_id}"}.{"{format}"}
                   </code>
                   . Credentials are encrypted with your server secret.
@@ -472,25 +474,26 @@ export function IntegrationsPanel() {
 
             <Panel>
               <div className="flex items-center gap-2">
-                <Server className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">SFTP drop</h2>
+                <Server className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">SFTP drop</h2>
               </div>
-              <p className="mt-2 text-sm text-graphite-500">
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Drop completed job exports on your SFTP server — common for legacy ETL and
                 banking-style file intake. Uses your workspace default export format.
               </p>
               <div className="mt-5 space-y-4">
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
+                <label className="flex items-center gap-2 text-sm text-graphite-700 dark:text-graphite-300">
                   <input
                     type="checkbox"
                     checked={sftpEnabled}
                     onChange={(e) => setSftpEnabled(e.target.checked)}
+                    className="accent-honey-500"
                   />
                   Enable SFTP drop on job completion
                 </label>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm">
-                    <span className="font-medium text-graphite-700">Host</span>
+                    <span className="font-medium text-graphite-700 dark:text-graphite-200">Host</span>
                     <input
                       type="text"
                       value={sftpHost}
@@ -500,7 +503,7 @@ export function IntegrationsPanel() {
                     />
                   </label>
                   <label className="block text-sm">
-                    <span className="font-medium text-graphite-700">Port</span>
+                    <span className="font-medium text-graphite-700 dark:text-graphite-200">Port</span>
                     <input
                       type="number"
                       value={sftpPort}
@@ -512,7 +515,7 @@ export function IntegrationsPanel() {
                   </label>
                 </div>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Username</span>
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Username</span>
                   <input
                     type="text"
                     value={sftpUsername}
@@ -522,7 +525,7 @@ export function IntegrationsPanel() {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Remote base path</span>
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Remote base path</span>
                   <input
                     type="text"
                     value={sftpRemotePath}
@@ -532,21 +535,21 @@ export function IntegrationsPanel() {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="font-medium text-graphite-700">Authentication</span>
-                  <select
+                  <span className="font-medium text-graphite-700 dark:text-graphite-200">Authentication</span>
+                  <Select
                     value={sftpAuthMethod}
                     onChange={(e) =>
                       setSftpAuthMethod(e.target.value as "password" | "private_key")
                     }
-                    className="app-input mt-1.5"
+                    className="mt-1.5"
                   >
                     <option value="password">Password</option>
                     <option value="private_key">SSH private key</option>
-                  </select>
+                  </Select>
                 </label>
                 {sftpAuthMethod === "password" ? (
                   <label className="block text-sm">
-                    <span className="font-medium text-graphite-700">
+                    <span className="font-medium text-graphite-700 dark:text-graphite-200">
                       Password{" "}
                       {sftp?.hasPassword && (
                         <span className="text-graphite-400">(configured)</span>
@@ -562,7 +565,7 @@ export function IntegrationsPanel() {
                   </label>
                 ) : (
                   <label className="block text-sm">
-                    <span className="font-medium text-graphite-700">
+                    <span className="font-medium text-graphite-700 dark:text-graphite-200">
                       Private key (PEM){" "}
                       {sftp?.hasPrivateKey && (
                         <span className="text-graphite-400">(configured)</span>
@@ -596,9 +599,9 @@ export function IntegrationsPanel() {
                     {testingSftp ? "Uploading…" : "Upload test file"}
                   </Button>
                 </div>
-                <p className="text-xs text-graphite-500">
+                <p className="text-xs text-graphite-500 dark:text-graphite-400">
                   Files land at{" "}
-                  <code className="text-[11px]">
+                  <code className="text-[11px] text-graphite-400">
                     {sftpRemotePath || "/syftin"}/{"{org_id}"}/{"{job_id}"}/syftin-{"{job_id}"}.{"{format}"}
                   </code>
                   . Credentials are encrypted at rest.
@@ -608,33 +611,34 @@ export function IntegrationsPanel() {
 
             <Panel>
               <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">Data warehouse load</h2>
+                <Database className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Data warehouse load</h2>
               </div>
-              <p className="mt-2 text-sm text-graphite-500">
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Insert each job record into Snowflake or BigQuery on completion. Target table must
                 include columns: job_id, organization_id, domain, job_name, completed_at, payload,
                 loaded_at.
               </p>
               <div className="mt-5 space-y-4">
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
+                <label className="flex items-center gap-2 text-sm text-graphite-700 dark:text-graphite-300">
                   <input
                     type="checkbox"
                     checked={warehouseEnabled}
                     onChange={(e) => setWarehouseEnabled(e.target.checked)}
+                    className="accent-honey-500"
                   />
                   Enable warehouse load on job completion
                 </label>
-                <select
+                <Select
                   value={warehouseProvider}
                   onChange={(e) =>
                     setWarehouseProvider(e.target.value as "snowflake" | "bigquery")
                   }
-                  className="app-input w-full text-sm"
+                  className="text-sm"
                 >
                   <option value="snowflake">Snowflake</option>
                   <option value="bigquery">BigQuery</option>
-                </select>
+                </Select>
                 {warehouseProvider === "snowflake" ? (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <input
@@ -721,46 +725,47 @@ export function IntegrationsPanel() {
 
             <Panel>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">Scheduled batch exports</h2>
+                <Calendar className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Scheduled batch exports</h2>
               </div>
-              <p className="mt-2 text-sm text-graphite-500">
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Bundle new completed jobs into one NDJSON file daily or weekly. Delivered via your
                 configured bucket or SFTP channel. Cron runs at 02:00 UTC.
               </p>
               <div className="mt-5 space-y-4">
-                <label className="flex items-center gap-2 text-sm text-graphite-700">
+                <label className="flex items-center gap-2 text-sm text-graphite-700 dark:text-graphite-300">
                   <input
                     type="checkbox"
                     checked={scheduleEnabled}
                     onChange={(e) => setScheduleEnabled(e.target.checked)}
+                    className="accent-honey-500"
                   />
                   Enable scheduled batch exports
                 </label>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <select
+                  <Select
                     value={scheduleFrequency}
                     onChange={(e) =>
                       setScheduleFrequency(e.target.value as "daily" | "weekly")
                     }
-                    className="app-input text-sm"
+                    className="text-sm"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly (Monday UTC)</option>
-                  </select>
-                  <select
+                  </Select>
+                  <Select
                     value={scheduleChannel}
                     onChange={(e) =>
                       setScheduleChannel(e.target.value as "bucket" | "sftp")
                     }
-                    className="app-input text-sm"
+                    className="text-sm"
                   >
                     <option value="bucket">Deliver via bucket</option>
                     <option value="sftp">Deliver via SFTP</option>
-                  </select>
+                  </Select>
                 </div>
                 {schedule?.lastRunAt && (
-                  <p className="text-xs text-graphite-500">
+                  <p className="text-xs text-graphite-500 dark:text-graphite-400">
                     Last run: {new Date(schedule.lastRunAt).toLocaleString()}
                   </p>
                 )}
@@ -769,59 +774,59 @@ export function IntegrationsPanel() {
 
             <Panel>
               <div className="flex items-center gap-2">
-                <Key className="h-4 w-4 text-honey-600" />
-                <h2 className="text-sm font-semibold text-graphite-900">REST API</h2>
+                <Key className="h-4 w-4 text-honey-600 dark:text-honey-400" />
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">REST API</h2>
               </div>
-              <p className="mt-2 text-sm text-graphite-500">
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Machine-to-machine access with an API key. Session cookies not required.
               </p>
               <div className="flex items-center justify-between mt-3">
                 {config?.apiKeyPrefix ? (
                   <div className="flex flex-col gap-1">
-                    <p className="font-mono text-xs text-graphite-600">
+                    <p className="font-mono text-xs text-graphite-500 dark:text-graphite-300">
                       Active key: {config.apiKeyPrefix}…
                     </p>
-                    <div className="flex items-center gap-3 text-xs text-graphite-500">
-                      <span>Scope: <strong className="font-medium">{config.apiKeyScope}</strong></span>
+                    <div className="flex items-center gap-3 text-xs text-graphite-500 dark:text-graphite-400">
+                      <span>Scope: <strong className="font-medium text-graphite-300">{config.apiKeyScope}</strong></span>
                       <span>Uses: {config.apiKeyUsageCount}</span>
                       {config.apiKeyLastUsedAt && <span>Last used: {new Date(config.apiKeyLastUsedAt).toLocaleDateString()}</span>}
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-graphite-500">No active key.</p>
+                  <p className="text-xs text-graphite-500 dark:text-graphite-400">No active key.</p>
                 )}
               </div>
               
               {newApiKey && (
-                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-xs font-medium text-amber-900">
+                <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                  <p className="text-xs font-medium text-amber-200">
                     Copy your new API key now — it won&apos;t be shown again.
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <code className="break-all text-xs text-graphite-800">{newApiKey}</code>
+                    <code className="break-all text-xs text-graphite-200">{newApiKey}</code>
                     <button
                       type="button"
                       onClick={copyKey}
-                      className="inline-flex items-center gap-1 text-xs text-honey-700"
+                      className="inline-flex items-center gap-1 text-xs text-honey-400 hover:text-honey-300"
                     >
                       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       {copied ? "Copied" : "Copy"}
                     </button>
-                    <span className="ml-2 text-xs text-graphite-500 font-medium">Scope: {newApiScope}</span>
+                    <span className="ml-2 text-xs text-graphite-500 dark:text-graphite-400 font-medium">Scope: {newApiScope}</span>
                   </div>
                 </div>
               )}
               
-              <div className="flex items-center gap-3 mt-4 border-t border-graphite-100 pt-4">
-                <select 
+              <div className="mt-4 flex items-center gap-3 border-t border-graphite-700 pt-4">
+                <Select
                   value={generateScope}
                   onChange={(e) => setGenerateScope(e.target.value)}
-                  className="app-input text-xs h-8 py-0"
+                  className="h-8 py-0 text-xs"
                 >
                   <option value="read_only">Read-only (GET)</option>
                   <option value="read_write">Read-write (GET/POST)</option>
                   <option value="admin">Admin (All + Org settings)</option>
-                </select>
+                </Select>
                 <Button
                   type="button"
                   size="sm"
@@ -832,10 +837,10 @@ export function IntegrationsPanel() {
                   {rotating ? "Generating…" : config?.apiKeyPrefix ? "Rotate key" : "Generate API key"}
                 </Button>
               </div>
-              <pre className="mt-4 overflow-x-auto rounded-lg bg-graphite-950 p-4 font-mono text-[11px] leading-relaxed text-emerald-400/90">
+              <pre className="mt-4 overflow-x-auto rounded-lg border border-graphite-800 bg-graphite-950 p-4 font-mono text-[11px] leading-relaxed text-honey-400/90">
                 {apiExample}
               </pre>
-              <p className="mt-3 text-xs text-graphite-500">
+              <p className="mt-3 text-xs text-graphite-500 dark:text-graphite-400">
                 Endpoints: <code>GET /api/v1/jobs</code>,{" "}
                 <code>GET /api/v1/jobs/:id</code>,{" "}
                 <code>GET /api/v1/jobs/:id/result?format=json|csv|ndjson</code>
@@ -843,43 +848,50 @@ export function IntegrationsPanel() {
             </Panel>
 
             <Panel>
-              <h2 className="text-sm font-semibold text-graphite-900">Export formats</h2>
-              <p className="mt-2 text-sm text-graphite-500">
+              <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Export formats</h2>
+              <p className="mt-2 text-sm text-graphite-500 dark:text-graphite-300">
                 Default format for API downloads and manual exports from Downloads.
               </p>
-              <select
-                value={defaultFormat}
-                onChange={(e) =>
-                  setDefaultFormat(e.target.value as "json" | "csv" | "ndjson")
-                }
-                className="mt-4 rounded-lg border border-ivory-200 bg-ivory-50 px-3 py-2 text-sm"
-              >
-                <option value="json">JSON (array of objects)</option>
-                <option value="csv">CSV (spreadsheet)</option>
-                <option value="ndjson">NDJSON (one JSON object per line)</option>
-              </select>
-              <ul className="mt-4 space-y-2 text-xs text-graphite-500">
+              <FieldGroup className="mt-4 max-w-md">
+                <FieldLabel htmlFor="export-format">Default format</FieldLabel>
+                <Select
+                  id="export-format"
+                  value={defaultFormat}
+                  onChange={(e) =>
+                    setDefaultFormat(e.target.value as "json" | "csv" | "ndjson")
+                  }
+                >
+                  <option value="json">JSON (array of objects)</option>
+                  <option value="csv">CSV (spreadsheet)</option>
+                  <option value="ndjson">NDJSON (one JSON object per line)</option>
+                </Select>
+                <FieldHint>Applies to bucket, SFTP, and manual downloads.</FieldHint>
+              </FieldGroup>
+              <ul className="mt-4 space-y-2 text-xs text-graphite-400">
                 <li>
-                  <strong className="text-graphite-700">JSON</strong> — best for apps and warehouses
+                  <strong className="font-medium text-graphite-200">JSON</strong> — best for apps and warehouses
                 </li>
                 <li>
-                  <strong className="text-graphite-700">CSV</strong> — Excel, Sheets, BI tools
+                  <strong className="font-medium text-graphite-200">CSV</strong> — Excel, Sheets, BI tools
                 </li>
                 <li>
-                  <strong className="text-graphite-700">NDJSON</strong> — streaming ETL pipelines
+                  <strong className="font-medium text-graphite-200">NDJSON</strong> — streaming ETL pipelines
                 </li>
               </ul>
+              <Button type="button" size="sm" className="mt-4" disabled={saving} onClick={saveWebhook}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save export format"}
+              </Button>
             </Panel>
 
             {log.length > 0 && (
               <Panel>
-                <h2 className="text-sm font-semibold text-graphite-900">Recent deliveries</h2>
-                <ul className="mt-4 divide-y divide-ivory-100 text-sm">
+                <h2 className="text-sm font-semibold text-graphite-900 dark:text-ivory-50">Recent deliveries</h2>
+                <ul className="mt-4 divide-y divide-graphite-800 text-sm">
                   {log.map((entry) => (
                     <li key={entry.id} className="flex justify-between gap-4 py-2.5">
-                      <span className="font-mono text-xs text-graphite-600">
+                      <span className="font-mono text-xs text-graphite-400">
                         {entry.job_id.slice(0, 8)}…
-                        <span className="ml-2 text-graphite-400">
+                        <span className="ml-2 text-graphite-500">
                           {entry.channel}
                           {entry.channel === "webhook" ? ` · ${entry.event_type}` : ""}
                         </span>
@@ -887,10 +899,10 @@ export function IntegrationsPanel() {
                       <span
                         className={
                           entry.status === "delivered"
-                            ? "text-emerald-600"
+                            ? "text-honey-400"
                             : entry.status === "failed"
-                              ? "text-red-600"
-                              : "text-graphite-500"
+                              ? "text-red-400"
+                              : "text-graphite-400"
                         }
                       >
                         {entry.status}

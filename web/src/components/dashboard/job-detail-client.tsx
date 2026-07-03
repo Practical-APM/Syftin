@@ -9,7 +9,9 @@ import { AlertBanner, Panel, SectionHeading } from "@/components/ui/card";
 import { RealtimeStatusBanner } from "@/components/dashboard/realtime-status-banner";
 import { ResultPreview } from "@/components/dashboard/result-preview";
 import { VarianceFlagsPanel } from "@/components/dashboard/variance-flags-panel";
+import { JobFetchProgressPanel } from "@/components/dashboard/job-fetch-progress-panel";
 import { Button } from "@/components/ui/button";
+import type { JobFetchProgress } from "@/lib/data/fetch-progress";
 import { useJobsRealtime } from "@/hooks/use-jobs-realtime";
 import { jobDownloadUrl } from "@/lib/jobs-utils";
 import {
@@ -20,7 +22,13 @@ import {
 } from "@/lib/types/jobs";
 import { cn, formatDate, formatComplianceScore } from "@/lib/utils";
 
-export function JobDetailClient({ initialJob }: { initialJob: Job }) {
+export function JobDetailClient({
+  initialJob,
+  fetchProgress,
+}: {
+  initialJob: Job;
+  fetchProgress?: JobFetchProgress | null;
+}) {
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -124,6 +132,10 @@ export function JobDetailClient({ initialJob }: { initialJob: Job }) {
               )}
             </dl>
           </Panel>
+
+          {fetchProgress && fetchProgress.total > 0 && (
+            <JobFetchProgressPanel progress={fetchProgress} />
+          )}
 
           {job.status === "failed" && (
             <AlertBanner variant="error">

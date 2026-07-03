@@ -87,7 +87,7 @@ export function BatchDetailClient({
       />
 
       <DashboardPage>
-        <Link href="/dashboard/batches" className="app-back-link mb-6">
+        <Link href="/dashboard/jobs?tab=batches" className="app-back-link mb-6">
           <ArrowLeft className="h-4 w-4 shrink-0" />
           Back to batches
         </Link>

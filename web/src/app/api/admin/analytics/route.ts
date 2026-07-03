@@ -154,6 +154,46 @@ export async function GET(request: NextRequest) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, v]) => ({ date, ...v }));
 
+  // ── 5. Platform health snapshots (cron-written daily metrics) ───────────
+  const { data: snapshots } = await admin
+    .from("analytics_snapshots")
+    .select("snapshot_date, metric_type, value")
+    .gte("snapshot_date", since)
+    .in("metric_type", [
+      "job_latency_p50",
+      "job_latency_p95",
+      "contributor_share_pct",
+      "ledger_reconciliation_delta_paise",
+    ])
+    .order("snapshot_date", { ascending: true });
+
+  const jobLatencyTimeline: { date: string; p50: number; p95: number }[] = [];
+  const latencyByDate: Record<string, { p50?: number; p95?: number }> = {};
+  let latestContributorShare = 0;
+  let latestLedgerDelta = 0;
+
+  for (const row of snapshots ?? []) {
+    const date = row.snapshot_date as string;
+    const type = row.metric_type as string;
+    const value = Number(row.value ?? 0);
+    if (type === "job_latency_p50" || type === "job_latency_p95") {
+      if (!latencyByDate[date]) latencyByDate[date] = {};
+      if (type === "job_latency_p50") latencyByDate[date].p50 = value;
+      else latencyByDate[date].p95 = value;
+    } else if (type === "contributor_share_pct") {
+      latestContributorShare = value;
+    } else if (type === "ledger_reconciliation_delta_paise") {
+      latestLedgerDelta = value;
+    }
+  }
+  for (const [date, v] of Object.entries(latencyByDate).sort(([a], [b]) => a.localeCompare(b))) {
+    jobLatencyTimeline.push({
+      date,
+      p50: v.p50 ?? 0,
+      p95: v.p95 ?? 0,
+    });
+  }
+
   return NextResponse.json({
     range,
     node_count_timeline: nodeCountByDay,
@@ -161,6 +201,11 @@ export async function GET(request: NextRequest) {
     domain_failure_rates: domainFailureRates,
     credit_burn_by_org: creditBurnByOrg,
     batch_throughput: batchThroughput,
+    platform_health: {
+      job_latency_timeline: jobLatencyTimeline,
+      contributor_share_pct: latestContributorShare,
+      ledger_reconciliation_delta_paise: latestLedgerDelta,
+    },
   });
 }
 
@@ -225,5 +270,14 @@ function mockAnalytics(days: number) {
       { org_id: "demo2", org_name: "Beta Inc", spend_paise: 42000, spend_rupees: "420.00" },
     ],
     batch_throughput: batchThroughput,
+    platform_health: {
+      job_latency_timeline: Array.from({ length: days }, (_, i) => ({
+        date: daysAgo(days - 1 - i),
+        p50: 45_000 + Math.floor(Math.random() * 20_000),
+        p95: 120_000 + Math.floor(Math.random() * 40_000),
+      })),
+      contributor_share_pct: 68,
+      ledger_reconciliation_delta_paise: 0,
+    },
   };
 }

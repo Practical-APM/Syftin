@@ -8,6 +8,10 @@ import {
   isRazorpayConfigured,
 } from "@/lib/payments/razorpay";
 import { insertRazorpayOrder } from "@/lib/data/payments";
+import {
+  orderTotalPaise,
+  type PaymentMethod,
+} from "@/lib/payments/payment-surcharge";
 import { isPhase2Enabled } from "@/lib/env";
 import {
   checkRateLimit,
@@ -40,26 +44,33 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const packId = (body as { packId?: string }).packId;
   const pack = packId ? getCreditPack(packId) : CREDIT_PACKS[0];
+  const methodRaw = (body as { paymentMethod?: string }).paymentMethod;
+  const paymentMethod: PaymentMethod =
+    methodRaw === "card" || methodRaw === "netbanking" ? methodRaw : "upi";
 
   if (!pack) {
     return NextResponse.json({ error: "Invalid credit pack." }, { status: 400 });
   }
 
+  const pricing = orderTotalPaise(pack.amountCents, paymentMethod);
   const receipt = `syftin_${auth.org.orgId.slice(0, 8)}_${Date.now()}`;
 
   try {
     const rzOrder = await createRazorpayOrder({
-      amountCents: pack.amountCents,
+      amountCents: pricing.chargePaise,
       receipt,
       notes: {
         org_id: auth.org.orgId,
         pack_id: pack.id,
+        credit_paise: String(pricing.creditPaise),
+        payment_method: paymentMethod,
+        surcharge_paise: String(pricing.surchargePaise),
       },
     });
 
     await insertRazorpayOrder(auth.org.orgId, {
       razorpayOrderId: rzOrder.id,
-      amountCents: pack.amountCents,
+      amountCents: pricing.creditPaise,
       receipt,
     });
 
@@ -71,6 +82,9 @@ export async function POST(request: Request) {
       packLabel: pack.label,
       orgName: auth.org.orgName,
       customerEmail: auth.email ?? undefined,
+      paymentMethod,
+      surchargePaise: pricing.surchargePaise,
+      creditPaise: pricing.creditPaise,
     });
   } catch (err) {
     return NextResponse.json(

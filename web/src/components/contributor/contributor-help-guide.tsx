@@ -19,7 +19,7 @@ import { getPublicSiteUrl } from "@/lib/env";
 const faqs = [
   {
     q: "Do I need to write any code?",
-    a: "No. Copy the one-line install command from Install, paste it in Terminal, and press Enter. The script handles downloads, Chromium, and background service setup.",
+    a: "No. Download one installer file from Install, open it, and paste your device token when asked. The file handles downloads, Chromium (for Ranger/Titan), and background service setup.",
   },
   {
     q: "How does Syftin know what software I need?",
@@ -47,7 +47,15 @@ const faqs = [
   },
   {
     q: "Does the node app work on Windows?",
-    a: "Yes. Use the native installer from Install. Windows gets the same resource safeguards — AC power detection, idle pause, and Titan's fast input watch via native Win32 APIs.",
+    a: "Yes. Download the Windows .bat installer from Install. Windows gets the same resource safeguards — AC power detection, idle pause, and Titan's fast input watch via native Win32 APIs.",
+  },
+  {
+    q: "Which installer file should I download?",
+    a: "Pick your OS and tier on the Install page. Scout is for lighter machines (HTTP only). Ranger adds Chromium for JavaScript sites. Titan is for GPU machines and also sets up on-device extraction. Not sure? Choose Ranger — your device re-scans hardware on first run.",
+  },
+  {
+    q: "macOS says the installer is from an unidentified developer?",
+    a: "Right-click the .command file inside the zip → Open → Open again. This is normal for downloaded scripts and only needed the first time.",
   },
   {
     q: "Can I pause on mobile data?",
@@ -60,18 +68,19 @@ const troubleshooting = [
     icon: AlertCircle,
     title: "Device stays offline",
     steps: [
-      "Confirm you copied the full token from My devices (starts with sftn_).",
-      "Re-run the install command — it updates config and restarts the service.",
+      "Confirm you pasted the full token when the installer opened (starts with sftn_).",
+      "Re-download and re-open the installer for your OS and tier — it updates config and restarts the service.",
       "On macOS: check ~/Library/LaunchAgents/io.syftin.node.plist exists.",
       "On Linux: run systemctl --user status syftin-node.",
     ],
   },
   {
     icon: Terminal,
-    title: "Install command failed",
+    title: "Installer failed or won't open",
     steps: [
-      "Ensure curl is installed (pre-installed on macOS).",
-      "Try Docker: copy the Docker command from Install.",
+      "macOS: unzip the download first, then right-click the .command file → Open.",
+      "Windows: if SmartScreen blocks the .bat, click More info → Run anyway.",
+      "Expand “Prefer the terminal?” on Install for a one-line curl command.",
       "If building from source, install Go 1.22+ and retry.",
     ],
   },
@@ -79,7 +88,7 @@ const troubleshooting = [
     icon: Cpu,
     title: "Stuck as Scout instead of Ranger",
     steps: [
-      "Ranger needs 12 GB+ RAM and Chromium. Re-run the installer to install browsers.",
+      "Ranger needs 12 GB+ RAM and Chromium. Re-download the Ranger or Titan installer.",
       "Restart the node after Chromium installs — tier updates on next heartbeat.",
     ],
   },
@@ -109,7 +118,7 @@ export function ContributorHelpGuide() {
                 Step-by-step install
               </p>
               <p className="mt-1 text-sm text-graphite-400">
-                Commands, OS tabs, and connection checks live on the Install page.
+                Download one file per OS and tier, open it, paste your token — done.
               </p>
             </div>
           </div>
@@ -190,7 +199,7 @@ export function ContributorHelpGuide() {
         </Panel>
 
         <p className="text-center text-xs text-graphite-500">
-          Install script: {siteUrl}/install-node.sh
+          Installers: {siteUrl}/contributor/download
         </p>
       </DashboardPage>
     </>

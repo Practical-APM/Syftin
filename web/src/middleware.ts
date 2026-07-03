@@ -27,6 +27,7 @@ function isPublicPath(pathname: string) {
   if (pathname === "/api/payments/razorpayx/webhook") return true;
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/releases/")) return true;
+  if (pathname.startsWith("/installers/")) return true;
   if (pathname === "/install-node.sh") return true;
   if (pathname === "/install-node.ps1") return true;
   if (pathname === "/install-playwright.sh") return true;
