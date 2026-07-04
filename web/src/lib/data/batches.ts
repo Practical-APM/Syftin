@@ -18,10 +18,20 @@ import {
   getCreditBalance,
   isCreditsEnforced,
 } from "@/lib/data/credits";
-import { DEFAULT_JOB_COST_CENTS } from "@/lib/env";
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
 import { sanitizeJobInput } from "@/lib/sanitize";
+import { assertOrgBillingUnlocked } from "@/lib/data/billing-guards";
+import { buildServerBatchSchema } from "@/lib/pricing/server-job-meta";
+import { expireFetchTasksForJob } from "@/lib/data/fetch-tasks";
+import { refundFailedShards } from "@/lib/data/credits";
 import type { JobBatch, BatchSummary, Job, BatchPricing } from "@/lib/types/jobs";
+
+const CANCELLABLE_SHARD_STATUSES = new Set([
+  "pending",
+  "queued",
+  "processing",
+  "validating",
+]);
 
 async function resolveOrg(org?: SessionOrg): Promise<SessionOrg> {
   if (org) return org;
@@ -133,6 +143,11 @@ export async function createBatch(
   }
 
   const workspace = await resolveOrg(org);
+  const billing = await assertOrgBillingUnlocked(workspace.orgId);
+  if (!billing.ok) {
+    return { success: false, error: billing.error };
+  }
+
   const orgDomains = await getOrgDomainList(workspace.orgId);
   const workspaceScoped = orgDomains.length > 0;
 
@@ -171,15 +186,36 @@ export async function createBatch(
   const { supabase, orgId } = await getBatchesClient(workspace);
   const admin = createAdminClient();
   const pricingMode: BatchPricing = "per_batch";
-  
-  // Create parent batch
+
+  const serverMeta = await buildServerBatchSchema({
+    schema: input.example_schema,
+    domains: validUrls.map((u) => u.domain),
+    maxRecords: input.max_records,
+    budgetCents: input.budget_cents,
+  });
+  if ("error" in serverMeta) {
+    return { success: false, error: serverMeta.error };
+  }
+
+  const chargePaise = serverMeta.chargePaise;
+
+  if (isCreditsEnforced()) {
+    const balance = await getCreditBalance(workspace);
+    if (balance < chargePaise) {
+      return {
+        success: false,
+        error: `Insufficient credits. This batch costs ₹${(chargePaise / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}. Top up credits or reduce target volume.`,
+      };
+    }
+  }
+
   const { data: batch, error: batchError } = await supabase
     .from("job_batches")
     .insert({
       organization_id: input.organization_id ?? orgId,
       name: input.name,
       total_shards: validUrls.length,
-      example_schema: input.example_schema,
+      example_schema: serverMeta.schema,
       batch_pricing: pricingMode,
     })
     .select("*")
@@ -189,61 +225,79 @@ export async function createBatch(
     return { success: false, error: batchError?.message ?? "Failed to create batch" };
   }
 
-  const distributedBase =
-    isPhase2Enabled() && process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
-
-  // Create shards
-  for (let i = 0; i < validUrls.length; i++) {
-    const { url, domain } = validUrls[i];
-    const jobTier = requiredTierForDomain(domain);
-    const shardName = `${input.name} - Shard ${i + 1}`;
-    const distributed = distributedBase;
-    
-    const { data: job, error: jobError } = await admin
-      .from("jobs")
-      .insert({
-        organization_id: batch.organization_id,
-        name: shardName,
-        target_url: url,
-        domain,
-        example_schema: input.example_schema,
-        status: "pending",
-        requires_edge_fetch: distributed,
-        compute_tier: jobTier,
-        parent_batch_id: batch.id,
-        shard_index: i,
-      })
-      .select("id")
-      .single();
-
-    if (!jobError && job && distributed) {
-      await createFetchTaskForJob(
-        job.id,
-        url,
-        domain,
-        jobTier,
-        undefined,
-        input.example_schema,
-      );
-    }
-  }
-
-  // Handle credits
   if (isCreditsEnforced()) {
-    const chargeAmount =
-      input.budget_cents ??
-      DEFAULT_JOB_COST_CENTS * validUrls.length;
     const charge = await chargeBatchCredits(
       orgId,
       batch.id,
-      chargeAmount,
+      chargePaise,
       validUrls.length,
     );
     if (!charge.ok) {
-       // rollback
-       await admin.from("job_batches").delete().eq("id", batch.id);
-       return { success: false, error: charge.error };
+      await admin.from("job_batches").delete().eq("id", batch.id);
+      return { success: false, error: charge.error };
     }
+  }
+
+  const distributedBase =
+    isPhase2Enabled() && process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
+
+  const createdJobIds: string[] = [];
+
+  try {
+    for (let i = 0; i < validUrls.length; i++) {
+      const { url, domain } = validUrls[i];
+      const jobTier = requiredTierForDomain(domain);
+      const shardName = `${input.name} - Shard ${i + 1}`;
+      const distributed = distributedBase;
+
+      const { data: job, error: jobError } = await admin
+        .from("jobs")
+        .insert({
+          organization_id: batch.organization_id,
+          name: shardName,
+          target_url: url,
+          domain,
+          example_schema: serverMeta.schema,
+          status: "pending",
+          requires_edge_fetch: distributed,
+          compute_tier: jobTier,
+          parent_batch_id: batch.id,
+          shard_index: i,
+        })
+        .select("id")
+        .single();
+
+      if (jobError || !job) {
+        throw new Error(jobError?.message ?? "Failed to create batch shard.");
+      }
+
+      createdJobIds.push(job.id);
+
+      if (distributed) {
+        await createFetchTaskForJob(
+          job.id,
+          url,
+          domain,
+          jobTier,
+          undefined,
+          serverMeta.schema,
+        );
+      }
+    }
+  } catch (err) {
+    if (isCreditsEnforced()) {
+      const { refundFailedShards } = await import("@/lib/data/credits");
+      await refundFailedShards(orgId, batch.id, validUrls.length);
+    }
+    if (createdJobIds.length > 0) {
+      await admin.from("fetch_tasks").delete().in("job_id", createdJobIds);
+      await admin.from("jobs").delete().in("id", createdJobIds);
+    }
+    await admin.from("job_batches").delete().eq("id", batch.id);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to create batch shards.",
+    };
   }
 
   return { success: true, batch: batch as JobBatch };
@@ -283,27 +337,66 @@ export async function cancelBatch(batchId: string, org?: SessionOrg): Promise<{ 
   const workspace = await resolveOrg(org);
   const { supabase, orgId } = await getBatchesClient(workspace);
 
-  const now = new Date().toISOString();
-  
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("jobs")
-    .update({ status: "cancelled", completed_at: now })
-    .eq("parent_batch_id", batchId)
-    .in("status", ["pending", "queued", "processing", "validating"]);
+  const { data: batch, error: batchFetchError } = await supabase
+    .from("job_batches")
+    .select("id, status")
+    .eq("id", batchId)
+    .eq("organization_id", orgId)
+    .single();
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (batchFetchError || !batch) {
+    return { success: false, error: "Batch not found." };
   }
-  
+
+  if (!["pending", "queued", "processing"].includes(batch.status)) {
+    return {
+      success: false,
+      error: "Only active batches that have not finished can be cancelled.",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: childJobs } = await admin
+    .from("jobs")
+    .select("id, status")
+    .eq("parent_batch_id", batchId)
+    .eq("organization_id", orgId);
+
+  const cancellableIds =
+    childJobs
+      ?.filter((j) => CANCELLABLE_SHARD_STATUSES.has(j.status))
+      .map((j) => j.id) ?? [];
+
+  for (const jobId of cancellableIds) {
+    await expireFetchTasksForJob(jobId, "Batch cancelled by buyer");
+  }
+
+  const now = new Date().toISOString();
+
+  if (cancellableIds.length > 0) {
+    const { error } = await admin
+      .from("jobs")
+      .update({ status: "cancelled", completed_at: now })
+      .in("id", cancellableIds);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   const { error: batchError } = await admin
     .from("job_batches")
     .update({ status: "cancelled", completed_at: now })
     .eq("id", batchId)
+    .eq("organization_id", orgId)
     .in("status", ["pending", "queued", "processing"]);
-    
+
   if (batchError) {
-      return { success: false, error: batchError.message };
+    return { success: false, error: batchError.message };
+  }
+
+  if (cancellableIds.length > 0) {
+    await refundFailedShards(orgId, batchId, cancellableIds.length);
   }
 
   const { dispatchBatchCancelledEvent } = await import("@/lib/data/batch-events");

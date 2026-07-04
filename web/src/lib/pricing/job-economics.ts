@@ -104,10 +104,10 @@ export function recordsAffordableByBudget(
 ): number {
   const baseTotal = pricing.baseFeePaise * Math.max(1, urlCount);
   const remaining = Math.max(0, budgetPaise - baseTotal);
-  const perUrlPaise = Math.floor(
-    (remaining * 100) / Math.max(pricing.perRecordPaise, 1),
+  const perUrlRows = Math.floor(
+    remaining / Math.max(pricing.perRecordPaise, 1),
   );
-  return Math.max(0, Math.floor(perUrlPaise / Math.max(1, urlCount)));
+  return Math.max(0, Math.floor(perUrlRows / Math.max(1, urlCount)));
 }
 
 export function resolveRecordLimits(input: {

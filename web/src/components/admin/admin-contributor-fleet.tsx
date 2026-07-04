@@ -62,6 +62,17 @@ export function AdminContributorFleetClient() {
                 value={String(data.stats.pendingFetchTasks)}
               />
               <StatCard
+                label="Avg tasks / node"
+                value={String(data.stats.avgTasksPerNode)}
+              />
+              <StatCard
+                label="CGNAT risk"
+                value={data.stats.cgnatRiskHigh ? "High" : "Normal"}
+                valueClassName={
+                  data.stats.cgnatRiskHigh ? "text-amber-600" : "text-emerald-600"
+                }
+              />
+              <StatCard
                 label="Fleet health"
                 value={
                   data.stats.nodesTotal === 0
@@ -79,6 +90,23 @@ export function AdminContributorFleetClient() {
                 }
               />
             </div>
+
+            {data.ipWarnings.length > 0 && (
+              <Panel className="border-amber-200 bg-amber-50/80">
+                <p className="text-sm font-medium text-amber-900">
+                  CGNAT / shared IP concentration
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-amber-800">
+                  {data.ipWarnings.map((w) => (
+                    <li key={w.ip}>
+                      {w.nodeCount} nodes share public IP{" "}
+                      <span className="font-mono">{w.ip}</span> — target sites may
+                      rate-limit this address.
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
 
             {data.contributors.length === 0 ? (
               <p className="rounded-xl border border-dashed border-ivory-200 bg-white px-6 py-12 text-center text-sm text-graphite-500">

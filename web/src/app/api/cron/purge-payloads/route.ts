@@ -3,17 +3,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured, isAuthRequired } from "@/lib/env";
 import { isPlatformAdminEmail } from "@/lib/auth/platform-admin";
 import { createClient } from "@/lib/supabase/server";
+import { deletePayloadObject } from "@/lib/storage/payload-storage";
 
 /**
  * POST /api/cron/purge-payloads
  *
- * Nulls out raw `html_payload` on fetch_tasks whose page was fetched more than
- * PAYLOAD_RETENTION_DAYS ago (default 7). Metadata (byte size, output hash,
- * consensus status) is preserved for accounting and dispute audit; only the
- * bulky raw markup is dropped. Runs daily via Vercel Cron.
+ * Drops raw fetch payloads older than PAYLOAD_RETENTION_DAYS (default 7):
+ * - Inline `html_payload` columns are nulled in Postgres
+ * - Offloaded objects are deleted from the platform payload bucket
  *
- * revenue_pipeline §9 — Infra & Resource Protection: raw payloads are transient
- * and must not accumulate indefinitely in the primary store.
+ * Metadata (byte size, output hash, consensus status) is preserved.
  */
 
 const PAYLOAD_RETENTION_DAYS = Number(
@@ -47,8 +46,9 @@ export async function POST(request: NextRequest) {
   const cutoff = new Date(
     Date.now() - PAYLOAD_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
+  const purgedAt = new Date().toISOString();
 
-  const { data: candidates, error: selectError } = await admin
+  const { data: inlineCandidates, error: inlineError } = await admin
     .from("fetch_tasks")
     .select("id")
     .lt("completed_at", cutoff)
@@ -56,19 +56,57 @@ export async function POST(request: NextRequest) {
     .is("payload_purged_at", null)
     .limit(PURGE_BATCH_SIZE);
 
-  if (selectError) {
-    return NextResponse.json({ error: selectError.message }, { status: 500 });
+  if (inlineError) {
+    return NextResponse.json({ error: inlineError.message }, { status: 500 });
   }
 
-  const ids = (candidates ?? []).map((r) => r.id as string);
-  if (ids.length === 0) {
+  const { data: objectCandidates, error: objectError } = await admin
+    .from("fetch_tasks")
+    .select("id, payload_storage_key")
+    .lt("completed_at", cutoff)
+    .not("payload_storage_key", "is", null)
+    .is("payload_purged_at", null)
+    .limit(PURGE_BATCH_SIZE);
+
+  if (objectError) {
+    return NextResponse.json({ error: objectError.message }, { status: 500 });
+  }
+
+  const inlineIds = (inlineCandidates ?? []).map((r) => r.id as string);
+  const objectRows = objectCandidates ?? [];
+
+  if (inlineIds.length === 0 && objectRows.length === 0) {
     return NextResponse.json({ ok: true, purged: 0, cutoff });
   }
 
+  let s3Deleted = 0;
+  for (const row of objectRows) {
+    const key = row.payload_storage_key as string | null;
+    if (!key) continue;
+    try {
+      await deletePayloadObject(key);
+      s3Deleted++;
+    } catch (err) {
+      console.error(`[purge-payloads] s3 delete ${key}:`, err);
+    }
+  }
+
+  const allIds = [
+    ...new Set([
+      ...inlineIds,
+      ...objectRows.map((r) => r.id as string),
+    ]),
+  ];
+
   const { error: updateError } = await admin
     .from("fetch_tasks")
-    .update({ html_payload: null, payload_purged_at: new Date().toISOString() })
-    .in("id", ids);
+    .update({
+      html_payload: null,
+      payload_storage_key: null,
+      payload_encoding: null,
+      payload_purged_at: purgedAt,
+    })
+    .in("id", allIds);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -76,9 +114,12 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    purged: ids.length,
+    purged: allIds.length,
+    s3_deleted: s3Deleted,
     cutoff,
     retention_days: PAYLOAD_RETENTION_DAYS,
-    more: ids.length === PURGE_BATCH_SIZE,
+    more:
+      inlineIds.length === PURGE_BATCH_SIZE ||
+      objectRows.length === PURGE_BATCH_SIZE,
   });
 }

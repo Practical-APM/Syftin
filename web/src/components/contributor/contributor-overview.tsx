@@ -18,6 +18,8 @@ type OverviewData = {
   nodesTotal: number;
   recentEarningsPaise: number;
   hasOnlineNode: boolean;
+  showFleetSaturatedHint?: boolean;
+  idleMinutes?: number | null;
 };
 
 function MetricTile({
@@ -119,6 +121,22 @@ export function ContributorOverviewClient({
           hasDevice={data.nodesTotal > 0}
           hasOnlineNode={data.hasOnlineNode}
         />
+
+        {data.showFleetSaturatedHint && (
+          <Panel className="border-amber-500/30 bg-amber-500/5">
+            <p className="text-sm font-medium text-amber-200">
+              Fleet saturated — try Eco mode overnight
+            </p>
+            <p className="mt-1 text-xs text-graphite-400">
+              Your device has been online {data.idleMinutes ?? 30}+ minutes without
+              tasks. Peak demand is often overnight — switch to Eco mode in{" "}
+              <Link href="/contributor/resources" className="text-honey-400 hover:text-honey-300">
+                Resources
+              </Link>{" "}
+              to stay available without impacting browsing.
+            </p>
+          </Panel>
+        )}
 
         <Panel className="relative overflow-hidden">
           <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-honey-500/5 blur-2xl" />

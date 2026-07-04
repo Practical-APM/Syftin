@@ -1,6 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getAdminContributorFleet } from "@/lib/data/admin-contributors";
+import { getBillingGuardStats } from "@/lib/data/billing-guards";
+import { isEmailConfigured } from "@/lib/email/mailer";
+import { isPayloadStorageConfigured } from "@/lib/storage/payload-storage";
 
 export type AdminOverview = {
   organizations: number;
@@ -25,6 +28,12 @@ export type AdminOverview = {
     domainsPendingReview: number;
     domainsReviewOverdue: number;
   };
+  infra: {
+    payloadStorageConfigured: boolean;
+    emailApiConfigured: boolean;
+    billingLockedOrgs: number;
+    recentLedgerDeltas: number;
+  };
 };
 
 export type PilotInvite = {
@@ -40,6 +49,8 @@ export type AdminOrganization = {
   slug: string;
   credit_balance_cents: number;
   dpa_signed_at: string | null;
+  billing_stream_locked: boolean;
+  billing_lock_reason: string | null;
   created_at: string;
   member_count: number;
   job_count: number;
@@ -71,10 +82,17 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         domainsPendingReview: 0,
         domainsReviewOverdue: 0,
       },
+      infra: {
+        payloadStorageConfigured: isPayloadStorageConfigured(),
+        emailApiConfigured: isEmailConfigured(),
+        billingLockedOrgs: 0,
+        recentLedgerDeltas: 0,
+      },
     };
   }
 
   const supabase = createAdminClient();
+  const billingStats = await getBillingGuardStats();
 
   const [orgsRes, jobsRes, invitesRes, heartbeatRes, fleet, fetchTasksRes, edgeJobsRes, domainsRes] =
     await Promise.all([
@@ -162,6 +180,12 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       totalDomains: (domainsRes.data ?? []).length,
       domainsPendingReview,
       domainsReviewOverdue,
+    },
+    infra: {
+      payloadStorageConfigured: isPayloadStorageConfigured(),
+      emailApiConfigured: isEmailConfigured(),
+      billingLockedOrgs: billingStats.lockedOrgs,
+      recentLedgerDeltas: billingStats.recentLedgerDeltas,
     },
   };
 }
@@ -269,6 +293,8 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
         slug: "syftin-demo",
         credit_balance_cents: 0,
         dpa_signed_at: new Date().toISOString(),
+        billing_stream_locked: false,
+        billing_lock_reason: null,
         created_at: new Date().toISOString(),
         member_count: 1,
         job_count: 0,
@@ -279,7 +305,7 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
   const supabase = createAdminClient();
   const { data: orgs, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, credit_balance_cents, dpa_signed_at, created_at")
+    .select("id, name, slug, credit_balance_cents, dpa_signed_at, billing_stream_locked, billing_lock_reason, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);

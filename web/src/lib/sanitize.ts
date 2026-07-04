@@ -3,6 +3,8 @@
  * Blocks illegal, NSFW, and injection patterns before tasks are created.
  */
 
+import { isBlockedHost } from "@/lib/security/ssrf";
+
 const BLOCKED_PATTERNS: { category: string; pattern: RegExp }[] = [
   // Illegal / harmful content indicators
   { category: "illegal content", pattern: /\b(child\s*porn|csam|underage\s*(sex|porn|nude))\b/i },
@@ -67,6 +69,8 @@ export function validateUrlSafety(url: string): string | null {
     if (parsed.username || parsed.password) {
       return "URLs with embedded credentials are not allowed.";
     }
+    const hostError = isBlockedHost(parsed.hostname);
+    if (hostError) return hostError;
   } catch {
     return "Invalid URL format.";
   }

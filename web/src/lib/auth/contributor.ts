@@ -20,6 +20,8 @@ export type SessionContributor = {
   resourceSettings: ContributorResourceSettings;
   panVerified: boolean;
   aadhaarVerified: boolean;
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
 };
 
 const DEMO_CONTRIBUTOR_ID = "c0000000-0000-4000-8000-000000000001";
@@ -51,6 +53,8 @@ export async function getSessionContributor(
       resourceSettings: { ...DEFAULT_RESOURCE_SETTINGS },
       panVerified: true,
       aadhaarVerified: false,
+      termsAcceptedAt: new Date().toISOString(),
+      termsVersion: "2026-07-pilot",
     };
   }
 
@@ -67,7 +71,7 @@ export async function getSessionContributor(
   const { data, error } = await admin
     .from("contributors")
     .select(
-      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified",
+      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified, terms_accepted_at, terms_version",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -87,6 +91,8 @@ export async function getSessionContributor(
     resourceSettings: normalizeContributorSettings(data.resource_settings),
     panVerified: Boolean(data.pan_verified),
     aadhaarVerified: Boolean(data.aadhaar_verified),
+    termsAcceptedAt: (data.terms_accepted_at as string | null) ?? null,
+    termsVersion: (data.terms_version as string | null) ?? null,
   };
 }
 
@@ -124,7 +130,7 @@ export async function provisionContributorUser(
       display_name: normalizedEmail.split("@")[0],
     })
     .select(
-      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified",
+      "id, display_name, email, upi_vpa, compute_tier, balance_paise, network_mode, metered_pause, is_active, resource_settings, pan_verified, aadhaar_verified, terms_accepted_at, terms_version",
     )
     .single();
 
@@ -152,6 +158,8 @@ export async function provisionContributorUser(
     resourceSettings: normalizeContributorSettings(contributor.resource_settings),
     panVerified: Boolean(contributor.pan_verified),
     aadhaarVerified: Boolean(contributor.aadhaar_verified),
+    termsAcceptedAt: (contributor.terms_accepted_at as string | null) ?? null,
+    termsVersion: (contributor.terms_version as string | null) ?? null,
   };
 }
 

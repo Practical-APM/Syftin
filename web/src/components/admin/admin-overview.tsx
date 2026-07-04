@@ -31,6 +31,12 @@ type Overview = {
     domainsPendingReview: number;
     domainsReviewOverdue: number;
   };
+  infra?: {
+    payloadStorageConfigured: boolean;
+    emailApiConfigured: boolean;
+    billingLockedOrgs: number;
+    recentLedgerDeltas: number;
+  };
   supabase: boolean;
   ollama: boolean;
   status: string;
@@ -183,6 +189,39 @@ export function AdminOverviewClient() {
                     tone={data.distributedFetch.expired > 0 ? "warning" : "default"}
                   />
                 </dl>
+              </Panel>
+            )}
+
+            {data.infra && (
+              <Panel>
+                <h2 className="text-sm font-semibold text-graphite-900">
+                  Phase 4 infrastructure
+                </h2>
+                <div className="mt-3 flex flex-wrap gap-4 text-xs text-graphite-600">
+                  <ServicePill
+                    ok={data.infra.payloadStorageConfigured}
+                    label="Payload S3 offload"
+                  />
+                  <ServicePill
+                    ok={data.infra.emailApiConfigured}
+                    label="Email OTP provider"
+                  />
+                </div>
+                {(data.infra.billingLockedOrgs > 0 ||
+                  data.infra.recentLedgerDeltas > 0) && (
+                  <AlertBanner variant="warning" className="mt-3">
+                    <p className="text-xs text-graphite-700">
+                      {data.infra.billingLockedOrgs > 0 &&
+                        `${data.infra.billingLockedOrgs} workspace(s) locked for billing reconciliation. `}
+                      {data.infra.recentLedgerDeltas > 0 &&
+                        `${data.infra.recentLedgerDeltas} ledger delta event(s) in the last 7 days.`}
+                      {" "}
+                      <Link href="/admin/organizations" className="text-honey-600">
+                        Review workspaces →
+                      </Link>
+                    </p>
+                  </AlertBanner>
+                )}
               </Panel>
             )}
 

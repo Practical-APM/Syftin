@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
@@ -15,22 +16,32 @@ import { getPublicSiteUrl } from "@/lib/env";
 
 const RELEASES_DIR = path.join(process.cwd(), "public", "releases");
 
+async function sha256ForAsset(name: string): Promise<string | null> {
+  try {
+    const buf = await readFile(path.join(RELEASES_DIR, name));
+    return createHash("sha256").update(buf).digest("hex");
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const siteUrl = getPublicSiteUrl();
-  const assets = RELEASE_PLATFORMS.flatMap((platform) => [
-    {
-      name: releaseAssetName("node", platform),
-      kind: "node" as const,
-      platform,
-      url: `${siteUrl}/releases/${releaseAssetName("node", platform)}`,
-    },
-    {
-      name: releaseAssetName("playwright", platform),
-      kind: "playwright" as const,
-      platform,
-      url: `${siteUrl}/releases/${releaseAssetName("playwright", platform)}`,
-    },
-  ]);
+  const assetEntries = await Promise.all(
+    RELEASE_PLATFORMS.flatMap((platform) => [
+      { kind: "node" as const, platform },
+      { kind: "playwright" as const, platform },
+    ]).map(async ({ kind, platform }) => {
+      const name = releaseAssetName(kind, platform);
+      return {
+        name,
+        kind,
+        platform,
+        url: `${siteUrl}/releases/${name}`,
+        sha256: await sha256ForAsset(name),
+      };
+    }),
+  );
 
   let localManifest: Record<string, unknown> | null = null;
   try {
@@ -46,7 +57,7 @@ export async function GET() {
     chromiumRevision: CHROMIUM_REVISION,
     installScriptUrl: `${siteUrl}/install-node.sh`,
     playwrightInstallScriptUrl: `${siteUrl}/install-playwright.sh`,
-    assets,
+    assets: assetEntries,
     localBuild: localManifest,
     githubRelease: githubReleaseAssetUrl(releaseAssetName("node", "darwin-arm64"))
       ? {

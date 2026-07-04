@@ -94,6 +94,9 @@ export function ContributorInstallWizard() {
   const [token, setToken] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsSaving, setTermsSaving] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   useEffect(() => {
     setOs(detectInstallOs(navigator.userAgent));
@@ -123,6 +126,23 @@ export function ContributorInstallWizard() {
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  async function acceptTerms() {
+    setTermsSaving(true);
+    setTermsError(null);
+    try {
+      const res = await fetch("/api/contributor/accept-terms", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error ?? "Could not save terms acceptance.");
+      }
+      setTermsAccepted(true);
+    } catch (err) {
+      setTermsError(err instanceof Error ? err.message : "Request failed.");
+    } finally {
+      setTermsSaving(false);
+    }
   }
 
   return (
@@ -270,8 +290,44 @@ export function ContributorInstallWizard() {
               </p>
             </div>
 
-            <a href={downloadUrl} download className="block">
-              <Button type="button" className="w-full justify-center" size="lg">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-graphite-700 bg-graphite-900/40 px-4 py-3 text-xs text-graphite-400">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    void acceptTerms();
+                  } else {
+                    setTermsAccepted(false);
+                  }
+                }}
+                disabled={termsSaving}
+                className="mt-0.5 h-4 w-4 rounded border-graphite-600 accent-honey-500"
+              />
+              <span>
+                I have read and accept the{" "}
+                <Link href="/contributor/terms" className="text-honey-400 hover:text-honey-300">
+                  Contributor Terms
+                </Link>{" "}
+                including network use, campus/dorm guidance, and sub-processor role.
+              </span>
+            </label>
+            {termsError && (
+              <p className="text-xs text-red-400">{termsError}</p>
+            )}
+
+            <a
+              href={downloadUrl}
+              download
+              className={`block ${termsAccepted ? "" : "pointer-events-none opacity-50"}`}
+              aria-disabled={!termsAccepted}
+            >
+              <Button
+                type="button"
+                className="w-full justify-center"
+                size="lg"
+                disabled={!termsAccepted}
+              >
                 <Download className="h-4 w-4" />
                 Download for {osLabel} · {tierLabel}
               </Button>

@@ -13,6 +13,8 @@ type Organization = {
   slug: string;
   credit_balance_cents: number;
   dpa_signed_at: string | null;
+  billing_stream_locked: boolean;
+  billing_lock_reason: string | null;
   created_at: string;
   member_count: number;
   job_count: number;
@@ -23,6 +25,28 @@ export function OrganizationsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+
+  const [unlockingId, setUnlockingId] = useState<string | null>(null);
+
+  async function clearBillingLock(orgId: string) {
+    setUnlockingId(orgId);
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearBillingLock: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Could not unlock.");
+      }
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unlock failed.");
+    } finally {
+      setUnlockingId(null);
+    }
+  }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -91,6 +115,9 @@ export function OrganizationsPanel() {
                     Created
                   </th>
                   <th className="px-5 py-3 text-xs font-medium text-graphite-500">
+                    Billing
+                  </th>
+                  <th className="px-5 py-3 text-xs font-medium text-graphite-500">
                     Domains
                   </th>
                 </tr>
@@ -128,6 +155,31 @@ export function OrganizationsPanel() {
                     </td>
                     <td className="px-5 py-4 text-xs text-graphite-500">
                       {formatDate(org.created_at)}
+                    </td>
+                    <td className="px-5 py-4">
+                      {org.billing_stream_locked ? (
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+                            <XCircle className="h-3.5 w-3.5" />
+                            Locked
+                          </span>
+                          {org.billing_lock_reason && (
+                            <p className="max-w-xs text-[10px] leading-snug text-graphite-500">
+                              {org.billing_lock_reason}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            disabled={unlockingId === org.id}
+                            onClick={() => clearBillingLock(org.id)}
+                            className="text-[10px] font-medium text-honey-700 hover:text-honey-600"
+                          >
+                            {unlockingId === org.id ? "Unlocking…" : "Clear lock"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-emerald-600">OK</span>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <button

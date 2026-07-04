@@ -352,11 +352,11 @@ export function recordsAffordableByBudget(
   budgetInr: number,
   urlCount = 1,
 ): number {
-  const budgetCents = clampBudgetInr(budgetInr) * 100;
-  const baseCents = DEFAULT_JOB_COST_CENTS * urlCount;
-  const remainingCents = Math.max(0, budgetCents - baseCents);
-  const perUrlPaise = Math.floor((remainingCents * 100) / STANDARD_PER_RECORD_PAISE);
-  return Math.max(0, Math.floor(perUrlPaise / urlCount));
+  const budgetPaise = clampBudgetInr(budgetInr) * 100;
+  const basePaise = DEFAULT_JOB_COST_CENTS * urlCount;
+  const remainingPaise = Math.max(0, budgetPaise - basePaise);
+  const perUrlRows = Math.floor(remainingPaise / STANDARD_PER_RECORD_PAISE);
+  return Math.max(0, Math.floor(perUrlRows / urlCount));
 }
 
 /** @deprecated use resolveRecordLimits from job-economics */

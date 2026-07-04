@@ -127,6 +127,12 @@ export function NodeCapacityEstimator({
             <span className="text-2xl font-light tracking-tight text-honey-400">
               ~ ₹{estimate.monthlyInr.toLocaleString("en-IN")}
             </span>
+            {estimate.monthlyInrLow < estimate.monthlyInr && (
+              <span className="ml-2 text-sm text-graphite-500">
+                (₹{estimate.monthlyInrLow.toLocaleString("en-IN")}–₹
+                {estimate.monthlyInr.toLocaleString("en-IN")} at pilot fleet load)
+              </span>
+            )}
             <span className="block text-xs text-graphite-400">/ month</span>
           </div>
         </div>

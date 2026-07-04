@@ -33,6 +33,27 @@ export function formatVarianceFlag(flag: string): string {
   if (flag === "capacity_timeout_hub_fallback") {
     return "No contributor capacity — pages were fetched directly by the hub";
   }
+  if (flag === "truth_divergence_hub") {
+    return "Hub re-fetch disagreed with contributor data — review before use";
+  }
+  if (flag === "truth_hub_verified") {
+    return "Hub spot-check matched contributor extraction";
+  }
+  if (flag === "truth_hub_check_failed") {
+    return "Hub truth verification could not complete";
+  }
+  if (flag === "html_poison_marker") {
+    return "Page content resembles a block or CAPTCHA interstitial";
+  }
+  if (flag === "suspicious_uniform_prices") {
+    return "All extracted prices are identical — possible synthetic data";
+  }
+  if (flag === "suspicious_sparse_fields") {
+    return "Most records missing key fields — possible poisoned page";
+  }
+  if (flag === "under_delivered") {
+    return "Delivered fewer rows than requested — partial credit may apply";
+  }
 
   const pagesFetched = flag.match(/^pages_fetched_(\d+)$/);
   if (pagesFetched) {

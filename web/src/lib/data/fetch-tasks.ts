@@ -11,6 +11,15 @@ import type { TaskType } from "@/lib/types/jobs";
 import { computeTaskRewardPaise } from "@/lib/contributor/economics";
 import { recordNodeSuccessDomain } from "@/lib/data/subscriptions";
 import { hashTaskOutput, resolveConsensusGroup } from "@/lib/data/consensus";
+import { getWhitelistEntryForDomain } from "@/lib/data/domains";
+import {
+  fetchPayloadHtml,
+  isPayloadStorageConfigured,
+  payloadObjectExists,
+} from "@/lib/storage/payload-storage";
+import {
+  isIpAtCapacity,
+} from "@/lib/data/fleet-caps";
 
 export type FetchTask = {
   id: string;
@@ -31,7 +40,26 @@ const PENDING_SCAN_LIMIT = 25;
 /** Anti-hoarding: max concurrent leases per node (revenue_pipeline.md §6) */
 const MAX_CONCURRENT_LEASES = 3;
 
-/** Re-queue fetch tasks stuck in claimed state (crashed node). */
+/** Stop in-flight contributor work when a job is cancelled. */
+export async function expireFetchTasksForJob(
+  jobId: string,
+  reason = "Job cancelled",
+): Promise<void> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+
+  const admin = createAdminClient();
+  await admin
+    .from("fetch_tasks")
+    .update({
+      status: "expired",
+      claimed_by_node_id: null,
+      claimed_at: null,
+      error_message: reason.slice(0, 500),
+    })
+    .eq("job_id", jobId)
+    .in("status", ["pending", "claimed"]);
+}
+
 export async function reclaimStaleFetchClaims(): Promise<number> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return 0;
 
@@ -64,7 +92,7 @@ export async function claimNextFetchTask(
 
   const { data: contributor } = await admin
     .from("contributors")
-    .select("metered_pause, network_mode, is_active")
+    .select("metered_pause, network_mode, is_active, user_id")
     .eq("id", contributorId)
     .single();
 
@@ -76,10 +104,21 @@ export async function claimNextFetchTask(
     return null;
   }
 
+  let buyerOrgIds = new Set<string>();
+  if (contributor.user_id) {
+    const { data: memberships } = await admin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", contributor.user_id);
+    buyerOrgIds = new Set(
+      (memberships ?? []).map((m: { organization_id: string }) => m.organization_id),
+    );
+  }
+
   const { data: node } = await admin
     .from("contributor_nodes")
     .select(
-      "connection_metered, compute_tier, detected_tier, playwright_ready",
+      "connection_metered, compute_tier, detected_tier, playwright_ready, ip_cooldown_until, last_seen_ip",
     )
     .eq("id", nodeId)
     .single();
@@ -89,6 +128,19 @@ export async function claimNextFetchTask(
   }
 
   if (!node) return null;
+
+  const cooldownUntil = node.ip_cooldown_until as string | null;
+  if (cooldownUntil && new Date(cooldownUntil).getTime() > Date.now()) {
+    return null;
+  }
+
+  const effectiveIp = clientIp ?? (node.last_seen_ip as string | null);
+  if (effectiveIp) {
+    const ipCap = await isIpAtCapacity(admin, effectiveIp);
+    if (ipCap.blocked) {
+      return null;
+    }
+  }
 
   const { count: activeLeases } = await admin
     .from("fetch_tasks")
@@ -128,7 +180,7 @@ export async function claimNextFetchTask(
 
   const { data: pending, error } = await admin
     .from("fetch_tasks")
-    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, required_region, jobs(example_schema)")
+    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, required_region, jobs(organization_id, example_schema)")
     .eq("status", "pending")
     .order("created_at", { ascending: true })
     .limit(PENDING_SCAN_LIMIT);
@@ -195,6 +247,16 @@ export async function claimNextFetchTask(
   const match = pending.find((task) => {
     if (suspended.has(task.domain)) return false;
 
+    const jobRow = task.jobs as
+      | { organization_id?: string; example_schema?: Record<string, unknown> }
+      | null;
+    if (
+      jobRow?.organization_id &&
+      buyerOrgIds.has(jobRow.organization_id)
+    ) {
+      return false;
+    }
+
     if (
       task.consensus_group_id &&
       collusionBlockedGroups.has(task.consensus_group_id)
@@ -242,7 +304,7 @@ export async function claimNextFetchTask(
     })
     .eq("id", match.id)
     .eq("status", "pending")
-    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, jobs(example_schema)")
+    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, jobs(organization_id, example_schema)")
     .maybeSingle();
 
   if (claimError || !claimed) return null;
@@ -262,28 +324,72 @@ export type CompleteFetchOptions = {
   parsedOutput?: unknown[];
   edgeInference?: boolean;
   inferenceModel?: string | null;
+  /** Object storage key after gzip upload (§9 payload offload). */
+  payloadKey?: string;
+  payloadEncoding?: "gzip" | "plain";
 };
+
+/** Resolve HTML for a fetch task from inline DB column or object storage. */
+export async function resolveFetchTaskHtml(taskId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("fetch_tasks")
+    .select("html_payload, payload_storage_key")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  if (data.html_payload) return data.html_payload as string;
+
+  const key = data.payload_storage_key as string | null;
+  if (!key) return null;
+
+  try {
+    return await fetchPayloadHtml(key);
+  } catch (err) {
+    console.error(`[fetch-payload] task=${taskId}:`, err);
+    return null;
+  }
+}
 
 export async function completeFetchTask(
   taskId: string,
   nodeId: string,
-  html: string,
+  html: string | null,
   options?: CompleteFetchOptions,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (Buffer.byteLength(html, "utf8") > MAX_HTML_BYTES) {
-    return { ok: false, error: "HTML payload too large." };
+  const payloadKey = options?.payloadKey?.trim();
+  const useOffload = Boolean(payloadKey && isPayloadStorageConfigured());
+
+  if (!useOffload) {
+    if (!html) {
+      return { ok: false, error: "HTML payload required." };
+    }
+    if (Buffer.byteLength(html, "utf8") > MAX_HTML_BYTES) {
+      return { ok: false, error: "HTML payload too large." };
+    }
   }
 
   const admin = createAdminClient();
   const { data: task, error: fetchError } = await admin
     .from("fetch_tasks")
     .select(
-      "id, claimed_by_node_id, status, required_tier, task_type, domain, job_id, consensus_group_id, jobs(example_schema)",
+      "id, claimed_by_node_id, status, required_tier, task_type, domain, job_id, target_url, consensus_group_id, jobs(organization_id, example_schema)",
     )
     .eq("id", taskId)
     .single();
 
   if (fetchError || !task) return { ok: false, error: "Task not found." };
+
+  const { isUrlAllowedForOrg } = await import("@/lib/data/org-domains");
+  const jobOrg = task.jobs as { example_schema?: Record<string, unknown>; organization_id?: string } | null;
+  const orgId = jobOrg?.organization_id;
+  if (orgId && task.target_url) {
+    const allowed = await isUrlAllowedForOrg(task.target_url as string, orgId);
+    if (!allowed) {
+      return { ok: false, error: "Task URL is not on the approved domain whitelist." };
+    }
+  }
 
   // Idempotency: already completed — return success (§6)
   if (task.status === "completed") {
@@ -302,18 +408,30 @@ export async function completeFetchTask(
 
   const now = new Date().toISOString();
   const tier = (task.required_tier ?? "scout") as ComputeTier;
-  const edgeInference = Boolean(options?.edgeInference);
 
   const { data: nodeRow } = await admin
     .from("contributor_nodes")
-    .select("tasks_completed")
+    .select("tasks_completed, capabilities")
     .eq("id", nodeId)
     .single();
 
+  const parsedOutput = Array.isArray(options?.parsedOutput)
+    ? options.parsedOutput
+    : undefined;
+  const caps = nodeRow?.capabilities as
+    | { gpu_inference_ready?: boolean }
+    | null;
+  const edgeInference =
+    Boolean(options?.edgeInference) &&
+    Boolean(caps?.gpu_inference_ready) &&
+    Boolean(parsedOutput && parsedOutput.length > 0);
+
   const jobRow = task.jobs as { example_schema?: Record<string, unknown> } | null;
+  const whitelistEntry = await getWhitelistEntryForDomain(task.domain);
   const economicsCtx = readSyftinEconomics(
     jobRow?.example_schema,
     task.domain,
+    whitelistEntry,
   );
   const rewardPaise = computeTaskRewardPaise(
     tier,
@@ -325,20 +443,51 @@ export async function completeFetchTask(
     },
   );
 
+  let resolvedHtml = html;
+  let byteSize = html ? Buffer.byteLength(html, "utf8") : 0;
+
+  if (useOffload && payloadKey) {
+    const exists = await payloadObjectExists(payloadKey);
+    if (!exists) {
+      return {
+        ok: false,
+        error: "Uploaded payload not found in object storage. Upload before completing.",
+      };
+    }
+    try {
+      resolvedHtml = await fetchPayloadHtml(payloadKey);
+    } catch {
+      return { ok: false, error: "Could not read uploaded payload." };
+    }
+    byteSize = Buffer.byteLength(resolvedHtml, "utf8");
+    if (byteSize > MAX_HTML_BYTES) {
+      return { ok: false, error: "HTML payload too large." };
+    }
+  }
+
   const patch: Record<string, unknown> = {
     status: "completed",
-    html_payload: html,
-    html_byte_size: Buffer.byteLength(html, "utf8"),
+    html_byte_size: byteSize,
     completed_at: now,
     reward_paise: rewardPaise,
-    output_hash: hashTaskOutput(html, options?.parsedOutput),
-    ...(task.consensus_group_id
-      ? { consensus_status: "pending" }
-      : {}),
+    output_hash: hashTaskOutput(resolvedHtml ?? "", options?.parsedOutput),
+    ...(task.consensus_group_id ? { consensus_status: "pending" } : {}),
   };
 
+  if (useOffload && payloadKey) {
+    patch.html_payload = null;
+    patch.payload_storage_key = payloadKey;
+    patch.payload_encoding = options?.payloadEncoding ?? "gzip";
+    patch.payload_stored_at = now;
+  } else {
+    patch.html_payload = resolvedHtml;
+    patch.payload_storage_key = null;
+    patch.payload_encoding = null;
+    patch.payload_stored_at = null;
+  }
+
   if (options?.parsedOutput !== undefined) {
-    patch.parsed_output = options.parsedOutput;
+    patch.parsed_output = parsedOutput;
     patch.edge_inference = edgeInference;
     patch.inference_model = options.inferenceModel ?? null;
   }
@@ -369,6 +518,13 @@ export async function failFetchTask(
   message: string,
 ): Promise<void> {
   const admin = createAdminClient();
+
+  const { data: nodeRow } = await admin
+    .from("contributor_nodes")
+    .select("last_seen_ip")
+    .eq("id", nodeId)
+    .maybeSingle();
+
   await admin
     .from("fetch_tasks")
     .update({
@@ -378,6 +534,19 @@ export async function failFetchTask(
     })
     .eq("id", taskId)
     .eq("claimed_by_node_id", nodeId);
+
+  if (
+    message.toLowerCase().includes("403") ||
+    message.toLowerCase().includes("captcha") ||
+    message.toLowerCase().includes("blocked")
+  ) {
+    const { setIpCooldownForNode } = await import("@/lib/data/fleet-caps");
+    await setIpCooldownForNode(
+      admin,
+      nodeId,
+      nodeRow?.last_seen_ip as string | null,
+    );
+  }
 
   // Decrease reputation
   const { data: node } = await admin.from("contributor_nodes").select("contributor_id").eq("id", nodeId).single();
@@ -392,15 +561,19 @@ export async function getCompletedFetchHtml(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("fetch_tasks")
-    .select("html_payload")
+    .select("id, html_payload, payload_storage_key")
     .eq("job_id", jobId)
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (error || !data?.html_payload) return null;
-  return data.html_payload as string;
+  if (error || !data) return null;
+  if (data.html_payload) return data.html_payload as string;
+  if (data.payload_storage_key) {
+    return resolveFetchTaskHtml(data.id as string);
+  }
+  return null;
 }
 
 export async function getCompletedEdgeParse(

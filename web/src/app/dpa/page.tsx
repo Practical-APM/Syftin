@@ -24,6 +24,30 @@ export default function DpaPage() {
         with each customer.
       </p>
       <h2 className="pt-2 text-base font-semibold text-graphite-900">
+        Sub-processors
+      </h2>
+      <p>
+        Syftin uses the following categories of sub-processors to deliver structured data:
+      </p>
+      <ul className="list-disc space-y-2 pl-5">
+        <li>
+          <strong className="font-medium">Contributor edge nodes</strong> — vetted operators who run the Syftin node app on their own devices to fetch approved public pages over their internet connection. Raw HTML is uploaded to Syftin-controlled storage for hub-side extraction; contributors must accept separate{" "}
+          <a href="/contributor/terms" className="text-honey-600 hover:text-honey-500">
+            Contributor Terms
+          </a>
+          .
+        </li>
+        <li>
+          <strong className="font-medium">Cloud infrastructure</strong> — database, object storage, and application hosting (e.g. Supabase, Vercel, S3-compatible storage).
+        </li>
+        <li>
+          <strong className="font-medium">Payment providers</strong> — Razorpay / RazorpayX for buyer credits and contributor payouts.
+        </li>
+      </ul>
+      <p className="text-sm text-graphite-600">
+        Data flow: Buyer job → task queue → contributor fetch (public IP) → encrypted upload → hub validation &amp; PII screening → buyer workspace delivery.
+      </p>
+      <h2 className="pt-2 text-base font-semibold text-graphite-900">
         Security measures
       </h2>
       <p>

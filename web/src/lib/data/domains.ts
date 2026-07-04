@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
+import { assertDomainBenchmarkGate } from "@/lib/data/benchmarks";
 import {
   DEFAULT_WHITELIST_DOMAINS,
   domainMatchesWhitelist,
@@ -80,6 +81,20 @@ export async function getActiveDomainList(): Promise<string[]> {
   return entries.filter((e) => e.is_active).map((e) => e.domain);
 }
 
+export async function getWhitelistEntryForDomain(
+  domain: string,
+): Promise<WhitelistEntry | null> {
+  const normalized = normalizeDomainInput(domain);
+  if (!normalized) return null;
+
+  const entries = await getWhitelistDomains();
+  return (
+    entries.find((e) => e.domain === normalized) ??
+    entries.find((e) => domainMatchesWhitelist(normalized, [e.domain])) ??
+    null
+  );
+}
+
 export async function isWhitelistedUrl(url: string): Promise<boolean> {
   const domain = extractDomain(url);
   if (!domain) return false;
@@ -103,6 +118,25 @@ export async function addWhitelistDomain(
   const domain = normalizeDomainInput(sanitized.domain);
   if (!domain) {
     return { success: false, error: "Invalid domain format." };
+  }
+
+  const benchGate = await assertDomainBenchmarkGate(domain);
+  if (!benchGate.ok) {
+    return { success: false, error: benchGate.error };
+  }
+
+  const benchEntry = await import("@/lib/data/benchmarks").then((m) =>
+    m.getDomainBenchmarkEntry(domain),
+  );
+  if (
+    benchEntry?.fetchMethod &&
+    benchEntry.fetchMethod !== "http" &&
+    benchEntry.fetchMethod !== "static"
+  ) {
+    const { markDomainPlaywrightRequired } = await import(
+      "@/lib/contributor/fetch-tier"
+    );
+    markDomainPlaywrightRequired(domain);
   }
 
   if (!isSupabaseConfigured()) {

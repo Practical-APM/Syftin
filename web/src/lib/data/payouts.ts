@@ -27,6 +27,8 @@ type ContributorRow = {
   upi_vpa: string | null;
   razorpay_contact_id: string | null;
   razorpay_fund_account_id: string | null;
+  pan_verified?: boolean | null;
+  aadhaar_verified?: boolean | null;
 };
 
 function mapPayoutRow(row: {
@@ -69,7 +71,7 @@ const PAYOUT_SELECT = `
   failure_reason,
   created_at,
   updated_at,
-  contributors ( email, display_name, upi_vpa, razorpay_contact_id, razorpay_fund_account_id )
+  contributors ( email, display_name, upi_vpa, razorpay_contact_id, razorpay_fund_account_id, pan_verified, aadhaar_verified )
 `;
 
 export async function listPendingPayouts(): Promise<PayoutEvent[]> {
@@ -156,6 +158,49 @@ async function ensureContributorFundAccount(
   return fundAccount.id;
 }
 
+const PAYOUT_MIN_INTERVAL_MS = 10 * 60 * 1000;
+const KYC_REQUIRED_CUMULATIVE_PAISE = 500_000;
+
+async function assertPayoutEligible(
+  contributorId: string,
+  contributor: ContributorRow,
+  payoutPaise: number,
+): Promise<void> {
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - PAYOUT_MIN_INTERVAL_MS).toISOString();
+  const { data: recent } = await admin
+    .from("payout_events")
+    .select("id")
+    .eq("contributor_id", contributorId)
+    .in("status", ["completed", "processing", "approved"])
+    .gte("updated_at", since)
+    .limit(1);
+
+  if (recent?.length) {
+    throw new Error(
+      "Minimum 10 minutes between payouts to the same contributor.",
+    );
+  }
+
+  const { data: history } = await admin
+    .from("payout_events")
+    .select("amount_paise")
+    .eq("contributor_id", contributorId)
+    .in("status", ["completed", "approved"]);
+
+  const cumulative =
+    (history ?? []).reduce((sum, row) => sum + Number(row.amount_paise), 0) +
+    payoutPaise;
+
+  const kycOk =
+    Boolean(contributor.pan_verified) || Boolean(contributor.aadhaar_verified);
+  if (cumulative > KYC_REQUIRED_CUMULATIVE_PAISE && !kycOk) {
+    throw new Error(
+      "PAN or Aadhaar verification required for cumulative payouts above ₹5,000.",
+    );
+  }
+}
+
 /** Manual approval when RazorpayX is not configured */
 export async function approvePayoutManual(
   payoutId: string,
@@ -220,6 +265,12 @@ export async function disbursePayoutViaRazorpayX(payoutId: string): Promise<{
   if (!contributor?.upi_vpa) {
     throw new Error("Contributor must add a UPI ID before payout.");
   }
+
+  await assertPayoutEligible(
+    payout.contributor_id,
+    contributor,
+    payout.amount_paise,
+  );
 
   const fundAccountId = await ensureContributorFundAccount(
     payout.contributor_id,
@@ -355,9 +406,22 @@ export async function processPendingPayoutsAuto(): Promise<AutoPayoutResult> {
 
   if (!isRazorpayXConfigured()) return result;
 
+  const batchLimit = Number.parseInt(
+    process.env.PAYOUT_BATCH_LIMIT?.trim() ?? "5",
+    10,
+  );
+  const maxBatch = Number.isFinite(batchLimit) && batchLimit > 0 ? batchLimit : 5;
+
   const pending = await listPendingPayouts();
+  const seenContributors = new Set<string>();
+  let processed = 0;
+
   for (const payout of pending) {
+    if (processed >= maxBatch) break;
+    if (seenContributors.has(payout.contributor_id)) continue;
     result.attempted++;
+    processed++;
+    seenContributors.add(payout.contributor_id);
     try {
       await disbursePayoutViaRazorpayX(payout.id);
       result.succeeded++;

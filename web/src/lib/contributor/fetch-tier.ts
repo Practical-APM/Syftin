@@ -14,6 +14,18 @@ export const JS_HEAVY_DOMAINS = new Set([
   "myntra.com",
 ]);
 
+/** Benchmark-gated domains requiring Playwright (runtime registration). */
+const benchmarkPlaywrightDomains = new Set<string>();
+
+export function markDomainPlaywrightRequired(domain: string): void {
+  benchmarkPlaywrightDomains.add(normalizeDomain(domain));
+}
+
+export function isPlaywrightRequiredDomain(domain: string): boolean {
+  const d = normalizeDomain(domain);
+  return JS_HEAVY_DOMAINS.has(d) || benchmarkPlaywrightDomains.has(d);
+}
+
 const TIER_RANK: Record<ComputeTier, number> = {
   scout: 1,
   ranger: 2,
@@ -25,7 +37,7 @@ export function normalizeDomain(domain: string): string {
 }
 
 export function requiredTierForDomain(domain: string): ComputeTier {
-  return JS_HEAVY_DOMAINS.has(normalizeDomain(domain)) ? "ranger" : "scout";
+  return isPlaywrightRequiredDomain(domain) ? "ranger" : "scout";
 }
 
 export function tierRank(tier: string): number {

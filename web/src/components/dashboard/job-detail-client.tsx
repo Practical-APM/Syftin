@@ -209,6 +209,13 @@ export function JobDetailClient({
                   {format}
                 </a>
               ))}
+              <a
+                href={`/api/jobs/${job.id}/delivery-manifest`}
+                className="inline-flex items-center gap-2 rounded-lg border border-graphite-200 px-4 py-2.5 text-sm font-medium text-graphite-700 transition-colors hover:border-honey-500/40 hover:text-honey-600"
+              >
+                <ArrowDownToLine className="h-4 w-4" />
+                Delivery manifest
+              </a>
             </div>
           ) : (
             <p className="text-sm text-graphite-500">
@@ -218,6 +225,10 @@ export function JobDetailClient({
                   ? "Cancelled jobs do not produce a download."
                   : "Your file will appear here when the job finishes."}
             </p>
+          )}
+
+          {job.variance_flags && job.variance_flags.length > 0 && (
+            <VarianceFlagsPanel flags={job.variance_flags} />
           )}
 
           <ResultPreview

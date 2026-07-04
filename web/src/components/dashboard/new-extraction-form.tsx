@@ -36,7 +36,6 @@ import type { ExtractionDraft } from "@/lib/ai/extraction-draft";
 import {
   DEFAULT_TARGET_RECORDS,
   MIN_BUDGET_INR,
-  attachJobMeta,
   estimateBatchCost,
   estimateJobCost,
 } from "@/lib/pricing/estimates";
@@ -207,16 +206,9 @@ export function NewExtractionForm({ domains }: { domains: string[] }) {
         body: JSON.stringify({
           name,
           urls,
-          example_schema: attachJobMeta(example_schema, {
-            max_records: parsedMaxRecords,
-            budget_cents: budgetCents,
-            effective_max_records: estimate.effectiveRecords,
-            limited_by: estimate.limitedBy,
-            economics: estimate.economics,
-            domain: extractDomain(urls[0] ?? "") ?? undefined,
-          }),
+          example_schema,
           max_records: parsedMaxRecords,
-          budget_cents: estimate.totalCents,
+          budget_cents: budgetCents,
         }),
       });
       const data = await res.json();
@@ -236,17 +228,9 @@ export function NewExtractionForm({ domains }: { domains: string[] }) {
       body: JSON.stringify({
         name,
         target_url: targetUrl,
-        example_schema: attachJobMeta(example_schema, {
-          max_records: parsedMaxRecords,
-          budget_cents: budgetCents,
-          effective_max_records: estimate.effectiveRecords,
-          limited_by: estimate.limitedBy,
-          economics: estimate.economics,
-          target_url: targetUrl,
-          domain: extractDomain(targetUrl) ?? undefined,
-        }),
+        example_schema,
         max_records: parsedMaxRecords,
-        budget_cents: estimate.totalCents,
+        budget_cents: budgetCents,
         ...(requiredRegion ? { required_region: requiredRegion } : {}),
       }),
     });

@@ -4,6 +4,8 @@ import { requirePhase4Api } from "@/lib/auth/v2-api";
 import { withRateLimit } from "@/lib/auth/rate-limit";
 import { createJob, getJobs } from "@/lib/data/jobs";
 import { validateJobVolumeInput } from "@/lib/pricing/estimates";
+import { getOrgVerified } from "@/lib/data/email-verification";
+import { getOrgBillingGates } from "@/lib/data/org-gates";
 
 export async function GET(request: Request) {
   const phaseBlock = requirePhase4Api();
@@ -43,6 +45,14 @@ export async function POST(request: Request) {
 
   return withRateLimit(auth.orgId, async () => {
     try {
+      const gates = await getOrgBillingGates(auth.orgId);
+      if (!gates.dpaSignedAt) {
+        return NextResponse.json(
+          { error: "Accept the Data Processing Agreement before creating jobs." },
+          { status: 403 },
+        );
+      }
+
       const body = await request.json();
       const {
         name,
@@ -67,7 +77,11 @@ export async function POST(request: Request) {
         );
       }
 
-      const volume = validateJobVolumeInput({ max_records, budget_cents });
+      const volume = validateJobVolumeInput({
+        max_records,
+        budget_cents,
+        isVerifiedAccount: gates.emailVerified,
+      });
       if (!volume.ok) {
         return NextResponse.json({ error: volume.error }, { status: 400 });
       }
@@ -84,7 +98,7 @@ export async function POST(request: Request) {
         {
           orgId: auth.orgId,
           orgName: auth.orgName,
-          dpaSignedAt: null,
+          dpaSignedAt: gates.dpaSignedAt,
           role: "api",
         },
       );

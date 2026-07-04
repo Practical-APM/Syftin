@@ -70,6 +70,59 @@ export async function getLatestBenchmarkReport(): Promise<{
   return { report: null, source: null };
 }
 
+export const BENCHMARK_ACTIVATION_MIN_SCORE = 90;
+
+export type DomainBenchmarkEntry = {
+  score: number;
+  passed: boolean;
+  fetchMethod?: string;
+};
+
+/** Latest benchmark row for a domain (null if never benchmarked). */
+export async function getDomainBenchmarkEntry(
+  domain: string,
+): Promise<DomainBenchmarkEntry | null> {
+  const normalized = domain.trim().toLowerCase().replace(/^www\./, "");
+  const { report } = await getLatestBenchmarkReport();
+  if (!report?.results?.length) return null;
+
+  const row = report.results.find(
+    (r) => r.domain.trim().toLowerCase().replace(/^www\./, "") === normalized,
+  );
+  if (!row) return null;
+
+  return {
+    score: row.compliance_score,
+    passed: row.passed,
+    fetchMethod: row.fetch_method,
+  };
+}
+
+export async function assertDomainBenchmarkGate(
+  domain: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (process.env.PILOT_SKIP_BENCHMARK_GATE === "true") {
+    return { ok: true };
+  }
+
+  const entry = await getDomainBenchmarkEntry(domain);
+  if (!entry) {
+    return {
+      ok: false,
+      error: `No benchmark report for "${domain}". Run worker/scripts/run-benchmarks.sh and upload results before activation.`,
+    };
+  }
+
+  if (entry.score < BENCHMARK_ACTIVATION_MIN_SCORE) {
+    return {
+      ok: false,
+      error: `Benchmark score ${entry.score}% is below ${BENCHMARK_ACTIVATION_MIN_SCORE}% minimum for "${domain}".`,
+    };
+  }
+
+  return { ok: true };
+}
+
 export async function saveBenchmarkReport(
   report: BenchmarkReport,
 ): Promise<void> {

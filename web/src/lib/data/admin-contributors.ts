@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 import { sweepStaleContributorNodes } from "@/lib/data/contributors";
+import { getIpConcentrationWarnings } from "@/lib/data/fleet-caps";
 
 export type AdminContributorNode = {
   id: string;
@@ -13,6 +14,7 @@ export type AdminContributorNode = {
   tasks_completed: number;
   last_seen_at: string | null;
   region?: string | null;
+  last_seen_ip?: string | null;
 };
 
 export type AdminContributor = {
@@ -34,7 +36,10 @@ export type AdminContributorFleet = {
     nodesTotal: number;
     nodesOnline: number;
     pendingFetchTasks: number;
+    avgTasksPerNode: number;
+    cgnatRiskHigh: boolean;
   };
+  ipWarnings: { ip: string; nodeCount: number }[];
 };
 
 export async function getAdminContributorFleet(): Promise<AdminContributorFleet> {
@@ -71,7 +76,10 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
         nodesTotal: 1,
         nodesOnline: 1,
         pendingFetchTasks: 0,
+        avgTasksPerNode: 42,
+        cgnatRiskHigh: false,
       },
+      ipWarnings: [],
     };
   }
 
@@ -89,7 +97,7 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
     admin
       .from("contributor_nodes")
       .select(
-        "id, contributor_id, machine_label, hostname, compute_tier, detected_tier, status, connection_metered, tasks_completed, last_seen_at, region",
+        "id, contributor_id, machine_label, hostname, compute_tier, detected_tier, status, connection_metered, tasks_completed, last_seen_at, region, last_seen_ip",
       )
       .order("created_at", { ascending: false }),
     admin
@@ -115,6 +123,7 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
       tasks_completed: node.tasks_completed,
       last_seen_at: node.last_seen_at,
       region: node.region,
+      last_seen_ip: node.last_seen_ip,
     });
     nodesByContributor.set(node.contributor_id, list);
   }
@@ -134,6 +143,11 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
   );
 
   const allNodes = contributors.flatMap((c) => c.nodes);
+  const ipWarnings = await getIpConcentrationWarnings(admin);
+  const totalTasks = allNodes.reduce((s, n) => s + n.tasks_completed, 0);
+  const avgTasksPerNode =
+    allNodes.length > 0 ? Math.round(totalTasks / allNodes.length) : 0;
+  const cgnatRiskHigh = ipWarnings.some((w) => w.nodeCount > 5);
 
   return {
     contributors,
@@ -142,6 +156,9 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
       nodesTotal: allNodes.length,
       nodesOnline: allNodes.filter((n) => n.status === "online").length,
       pendingFetchTasks: fetchRes.count ?? 0,
+      avgTasksPerNode,
+      cgnatRiskHigh,
     },
+    ipWarnings,
   };
 }

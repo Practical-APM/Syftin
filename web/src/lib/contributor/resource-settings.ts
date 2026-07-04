@@ -1,5 +1,13 @@
 import { TIER_DETAILS, type ComputeTier } from "@/lib/contributor/tier";
-import { computeFetchRewardPaise } from "@/lib/contributor/economics";
+import {
+  computeFetchRewardPaise,
+  computeTaskRewardPaise,
+} from "@/lib/contributor/economics";
+import {
+  buildJobEconomics,
+  expectedFetchTasks,
+} from "@/lib/pricing/job-economics";
+import { defaultPricingForDomain } from "@/lib/pricing/domain-pricing";
 
 export type NodeResourceTelemetry = {
   profile?: string;
@@ -234,8 +242,20 @@ export type CapacityEstimate = {
   task: string;
   hourlyInr: number;
   monthlyInr: number;
+  monthlyInrLow: number;
+  perTaskPaise: number;
 };
 
+function pilotFleetSize(): number {
+  const raw = process.env.PILOT_FLEET_SIZE?.trim();
+  if (raw) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 1) return n;
+  }
+  return 50;
+}
+
+/** Honest earnings estimate using margin-lock economics (500-row reference job). */
 export function estimateNodeCapacity(input: {
   os: CalculatorOs;
   ramGb: number;
@@ -266,9 +286,28 @@ export function estimateNodeCapacity(input: {
     tasksPerHour = 20;
   }
 
-  const rewardPaise = computeFetchRewardPaise(tier, gpuInference);
-  const hourlyInr = Math.round((tasksPerHour * rewardPaise) / 100);
+  const referenceRecords = 500;
+  const economics = buildJobEconomics({
+    pricing: defaultPricingForDomain("standard"),
+    maxRecords: referenceRecords,
+    urlCount: 1,
+  });
+  const fetchTasks = expectedFetchTasks(referenceRecords, false);
+  const perTaskPaise = computeTaskRewardPaise(tier, "fetch", gpuInference, {
+    domainBaseFeePaise: economics.pricing.baseFeePaise,
+    effectiveRecords: economics.effectiveRecords,
+    grossRevenuePaise: economics.grossRevenuePaise,
+    workerPayoutCeilingPaise: economics.workerPayoutCeilingPaise,
+    expectedFetchTasks: fetchTasks,
+    nodeTasksCompleted: 0,
+  });
+
+  const fleetShare = Math.max(1, pilotFleetSize());
+  const tasksPerHourAdjusted = (tasksPerHour * 60) / fleetShare;
+  const hourlyInr = Math.round((tasksPerHourAdjusted * perTaskPaise) / 100);
   const monthlyInr = Math.round(hourlyInr * hoursPerDay * 30);
+  const uncappedHourly = Math.round((tasksPerHourAdjusted * computeFetchRewardPaise(tier, gpuInference)) / 100);
+  const monthlyInrLow = Math.round(uncappedHourly * hoursPerDay * 30 * 0.5);
 
   return {
     tier,
@@ -276,6 +315,8 @@ export function estimateNodeCapacity(input: {
     task,
     hourlyInr,
     monthlyInr,
+    monthlyInrLow: Math.min(monthlyInrLow, monthlyInr),
+    perTaskPaise,
   };
 }
 

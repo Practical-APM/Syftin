@@ -48,7 +48,7 @@ export async function resolveConsensusGroup(
     const ids = completed.map((t) => t.id);
     await admin
       .from("fetch_tasks")
-      .update({ consensus_status: "verified" })
+      .update({ consensus_status: "pending_hub_check" })
       .in("id", ids);
     return;
   }
@@ -108,5 +108,54 @@ export async function resolveConsensusGroup(
         is_consensus_arbiter: true,
       });
     }
+  }
+}
+
+/** After hub spot-check passes, verify consensus group and allow payout. */
+export async function verifyConsensusGroupAfterHubCheck(
+  groupId: string,
+  hubVerified: boolean,
+): Promise<void> {
+  const admin = createAdminClient();
+  const status = hubVerified ? "verified" : "disputed";
+
+  await admin
+    .from("fetch_tasks")
+    .update({
+      consensus_status: status,
+      ...(hubVerified
+        ? {}
+        : {
+            reward_paise: 0,
+            error_message: "Hub spot-check failed — payout withheld",
+          }),
+    })
+    .eq("consensus_group_id", groupId)
+    .eq("is_consensus_arbiter", false)
+    .in("consensus_status", ["pending_hub_check", "pending"]);
+}
+
+export async function verifyConsensusGroupsForJob(
+  jobId: string,
+  hubVerified: boolean,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { data: groups } = await admin
+    .from("fetch_tasks")
+    .select("consensus_group_id")
+    .eq("job_id", jobId)
+    .not("consensus_group_id", "is", null)
+    .eq("consensus_status", "pending_hub_check");
+
+  const unique = [
+    ...new Set(
+      (groups ?? [])
+        .map((g) => g.consensus_group_id as string)
+        .filter(Boolean),
+    ),
+  ];
+
+  for (const groupId of unique) {
+    await verifyConsensusGroupAfterHubCheck(groupId, hubVerified);
   }
 }

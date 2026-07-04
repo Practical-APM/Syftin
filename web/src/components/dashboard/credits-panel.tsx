@@ -26,10 +26,12 @@ export function CreditsPanel({
   initialBalance,
   initialTransactions,
   razorpayEnabled,
+  defaultEmail,
 }: {
   initialBalance: number;
   initialTransactions: CreditTransaction[];
   razorpayEnabled: boolean;
+  defaultEmail?: string;
 }) {
   const [balance, setBalance] = useState(initialBalance);
   const [transactions, setTransactions] = useState(initialTransactions);
@@ -154,6 +156,7 @@ export function CreditsPanel({
         {!emailVerified && (
           <EmailVerificationPanel
             initialVerified={false}
+            defaultEmail={defaultEmail}
             onVerified={() => {
               setEmailVerified(true);
               load();

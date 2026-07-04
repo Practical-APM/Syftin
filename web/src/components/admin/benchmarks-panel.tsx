@@ -105,6 +105,14 @@ export function BenchmarksPanel() {
                 </span>
               )}
             </p>
+            <p className="text-xs text-graphite-500 dark:text-graphite-400">
+              New domains require ≥90% compliance before activation in{" "}
+              <span className="font-medium">/admin/domains</span>. Re-run{" "}
+              <code className="rounded bg-graphite-100 px-1 dark:bg-graphite-800">
+                bash worker/scripts/run-benchmarks.sh
+              </code>{" "}
+              after schema or fetch changes.
+            </p>
 
             <div className="app-data-table overflow-hidden">
               <table className="w-full text-left text-sm">

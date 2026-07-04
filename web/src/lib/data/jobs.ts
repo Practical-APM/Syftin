@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionOrg, type SessionOrg } from "@/lib/auth/org";
-import { DEFAULT_JOB_COST_CENTS, DEMO_ORG_ID, isAuthRequired, isPhase2Enabled, isSupabaseConfigured } from "@/lib/env";
+import { DEMO_ORG_ID, isAuthRequired, isPhase2Enabled, isSupabaseConfigured } from "@/lib/env";
 import { extractDomain, getWhitelistRejectionMessage } from "@/lib/constants/whitelist";
 import {
   getOrgDomainList,
@@ -20,10 +20,14 @@ import {
   createFetchTaskForJob,
   getCreditBalance,
   isCreditsEnforced,
+  refundCancelledJob,
 } from "@/lib/data/credits";
 import { resetFetchTasksForJobRetry } from "@/lib/data/fetch-progress";
+import { expireFetchTasksForJob } from "@/lib/data/fetch-tasks";
+import { assertOrgBillingUnlocked } from "@/lib/data/billing-guards";
 import { sanitizeJobInput } from "@/lib/sanitize";
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
+import { buildServerJobSchema } from "@/lib/pricing/server-job-meta";
 import type { Job, JobStatus } from "@/lib/types/jobs";
 
 type DbJob = {
@@ -160,6 +164,11 @@ export async function createJob(
   const { name, target_url } = sanitized.sanitized;
 
   const workspace = await resolveOrg(org);
+  const billing = await assertOrgBillingUnlocked(workspace.orgId);
+  if (!billing.ok) {
+    return { success: false, error: billing.error };
+  }
+
   const orgDomains = await getOrgDomainList(workspace.orgId);
   const workspaceScoped = orgDomains.length > 0;
 
@@ -197,13 +206,25 @@ export async function createJob(
 
   const { supabase, orgId } = await getJobsClient(workspace);
 
+  const serverMeta = await buildServerJobSchema({
+    schema: input.example_schema,
+    domain,
+    targetUrl: target_url,
+    maxRecords: input.max_records,
+    budgetCents: input.budget_cents,
+  });
+  if ("error" in serverMeta) {
+    return { success: false, error: serverMeta.error };
+  }
+
+  const chargePaise = serverMeta.chargePaise;
+
   if (isCreditsEnforced()) {
-    const chargeAmount = input.budget_cents ?? DEFAULT_JOB_COST_CENTS;
     const balance = await getCreditBalance(workspace);
-    if (balance < chargeAmount) {
+    if (balance < chargePaise) {
       return {
         success: false,
-        error: `Insufficient credits. Estimated cost ₹${(chargeAmount / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}. Top up credits or reduce target volume.`,
+        error: `Insufficient credits. This job costs ₹${(chargePaise / 100).toFixed(0)}; balance ₹${(balance / 100).toFixed(0)}. Top up credits or reduce target volume.`,
       };
     }
   }
@@ -221,7 +242,7 @@ export async function createJob(
       name,
       target_url,
       domain,
-      example_schema: input.example_schema,
+      example_schema: serverMeta.schema,
       status: "pending",
       requires_edge_fetch: distributed,
       compute_tier: jobTier,
@@ -234,6 +255,14 @@ export async function createJob(
     return { success: false, error: error.message };
   }
 
+  if (isCreditsEnforced() && data) {
+    const charge = await chargeJobCredits(orgId, data.id, chargePaise);
+    if (!charge.ok) {
+      await supabase.from("jobs").delete().eq("id", data.id);
+      return { success: false, error: charge.error };
+    }
+  }
+
   if (distributed && data) {
     await createFetchTaskForJob(
       data.id,
@@ -241,20 +270,8 @@ export async function createJob(
       domain,
       jobTier,
       input.required_region,
-      input.example_schema,
+      serverMeta.schema,
     );
-  }
-
-  if (isCreditsEnforced() && data) {
-    const charge = await chargeJobCredits(
-      orgId,
-      data.id,
-      input.budget_cents ?? DEFAULT_JOB_COST_CENTS,
-    );
-    if (!charge.ok) {
-      await supabase.from("jobs").delete().eq("id", data.id);
-      return { success: false, error: charge.error };
-    }
   }
 
   return { success: true, job: mapDbJob(data as DbJob) };
@@ -301,6 +318,7 @@ export async function retryJob(
         job.domain,
         job.compute_tier ?? undefined,
         job.required_region ?? undefined,
+        job.example_schema as Record<string, unknown> | undefined,
       );
     }
   }
@@ -352,7 +370,7 @@ export async function cancelJob(
   const { supabase, orgId } = await getJobsClient(workspace);
   const { data: job, error: fetchError } = await supabase
     .from("jobs")
-    .select("id, status")
+    .select("id, status, record_count, example_schema")
     .eq("id", id)
     .eq("organization_id", orgId)
     .single();
@@ -368,6 +386,8 @@ export async function cancelJob(
     };
   }
 
+  await expireFetchTasksForJob(id, "Job cancelled by buyer");
+
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("jobs")
@@ -382,6 +402,11 @@ export async function cancelJob(
   if (error) {
     return { success: false, error: error.message };
   }
+
+  await refundCancelledJob(orgId, id, {
+    recordCount: job.record_count,
+    exampleSchema: job.example_schema as Record<string, unknown>,
+  });
 
   return { success: true };
 }
