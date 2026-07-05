@@ -128,7 +128,7 @@ export function CustomerStatusStrip() {
       <p className="mx-auto max-w-6xl text-sm text-graphite-600">
         Processing may take longer than usual. If a job stays pending,{" "}
         <Link
-          href="mailto:hello@syftin.io"
+          href="mailto:support@syftin.com"
           className="font-medium text-honey-600 hover:text-honey-500"
         >
           contact support

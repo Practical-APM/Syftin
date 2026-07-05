@@ -61,8 +61,8 @@ export default function DpaPage() {
       <p>
         Enterprise customers receive a countersigned agreement during onboarding.
         Email{" "}
-        <a href="mailto:hello@syftin.io" className="text-honey-600 hover:text-honey-500">
-          hello@syftin.io
+        <a href="mailto:support@syftin.com" className="text-honey-600 hover:text-honey-500">
+          support@syftin.com
         </a>{" "}
         to request the current DPA template.
       </p>

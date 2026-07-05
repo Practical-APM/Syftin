@@ -86,11 +86,11 @@ export function Footer() {
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
-              href="mailto:hello@syftin.io"
+              href="mailto:support@syftin.com"
               className="mt-4 flex items-center gap-1.5 text-xs text-graphite-500 dark:text-graphite-400 transition-colors hover:text-graphite-900 dark:hover:text-honey-400"
             >
               <Mail className="h-3.5 w-3.5" />
-              hello@syftin.io
+              support@syftin.com
             </a>
           </div>
         </div>

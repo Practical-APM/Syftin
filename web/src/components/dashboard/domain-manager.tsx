@@ -109,7 +109,7 @@ export function DomainManager({
       {domains.length === 0 ? (
         <p className="rounded-lg border border-dashed border-ivory-200 bg-ivory-50 px-4 py-8 text-center text-sm text-graphite-500">
           {readOnly
-            ? "No approved sites configured yet. Contact hello@syftin.io to enable domains for your workspace."
+            ? "No approved sites configured yet. Contact support@syftin.com to enable domains for your workspace."
             : "No approved sites yet. Add your first domain above."}
         </p>
       ) : (

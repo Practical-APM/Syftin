@@ -118,7 +118,7 @@ export async function provisionContributorUser(
 
   if (!invite && !isContributorInvited(normalizedEmail)) {
     throw new Error(
-      "Your email is not on the contributor access list. Contact hello@syftin.io.",
+      "Your email is not on the contributor access list. Contact support@syftin.com.",
     );
   }
 

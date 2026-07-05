@@ -59,7 +59,7 @@ export default function DocsErrorsPage() {
         <p className="mt-10 text-sm text-graphite-500 dark:text-graphite-300">
           Still stuck?{" "}
           <a
-            href="mailto:hello@syftin.io"
+            href="mailto:support@syftin.com"
             className="font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
           >
             Contact support

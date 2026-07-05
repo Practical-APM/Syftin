@@ -12,7 +12,7 @@ export function WorkspaceDomainList({
   if (domains.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-ivory-200 bg-ivory-50 px-4 py-8 text-center text-sm text-graphite-500">
-        No approved sites configured yet. Contact hello@syftin.io to enable domains
+        No approved sites configured yet. Contact support@syftin.com to enable domains
         for your workspace.
       </p>
     );

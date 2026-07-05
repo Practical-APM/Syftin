@@ -128,7 +128,7 @@ export async function provisionPilotUser(
     orgName = org.name;
   } else {
     throw new Error(
-      "Your email is not on the pilot access list. Contact hello@syftin.io for access.",
+      "Your email is not on the pilot access list. Contact support@syftin.com for access.",
     );
   }
 

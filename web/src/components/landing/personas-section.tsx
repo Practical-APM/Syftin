@@ -53,7 +53,7 @@ const personas = [
     bullets: [
       "Early access pilot for India-based business customers",
       "No crypto, no proxy resale, no bypass language",
-      "Questions? Read our privacy policy or email hello@syftin.io",
+      "Questions? Read our privacy policy or email support@syftin.com",
     ],
     cta: { label: "Read how it works", href: "#demo" },
     accent: "border-ivory-300 bg-ivory-50",

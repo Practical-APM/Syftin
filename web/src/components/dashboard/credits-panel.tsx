@@ -292,10 +292,10 @@ export function CreditsPanel({
             <>
               Payments processed by Razorpay. For billing questions contact{" "}
               <a
-                href="mailto:hello@syftin.io"
+                href="mailto:support@syftin.com"
                 className="text-honey-600 dark:text-honey-400 hover:underline"
               >
-                hello@syftin.io
+                support@syftin.com
               </a>
               .
             </>

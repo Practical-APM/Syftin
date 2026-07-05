@@ -44,10 +44,10 @@ export default function TermsPage() {
       <p>
         Questions about these terms:{" "}
         <a
-          href="mailto:hello@syftin.io"
+          href="mailto:support@syftin.com"
           className="text-honey-600 hover:text-honey-500"
         >
-          hello@syftin.io
+          support@syftin.com
         </a>
         . See also our{" "}
         <a href="/privacy" className="text-honey-600 hover:text-honey-500">

@@ -34,8 +34,8 @@ export default function PrivacyPage() {
       <p>
         Business customers may request access, correction, or deletion of account
         data by contacting{" "}
-        <a href="mailto:hello@syftin.io" className="text-honey-600 hover:text-honey-500">
-          hello@syftin.io
+        <a href="mailto:support@syftin.com" className="text-honey-600 hover:text-honey-500">
+          support@syftin.com
         </a>
         .
       </p>
