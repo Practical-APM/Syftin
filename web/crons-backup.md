@@ -1,6 +1,10 @@
 # Vercel Cron Jobs Configuration
 
-When you want to implement the cron jobs later, add this to your `vercel.json`:
+Vercel Hobby allows **one** cron per project. `vercel.json` currently runs only
+`health-alerts`. Re-enable the rest when you upgrade to Pro (or run them via an
+external scheduler hitting the same routes with `CRON_SECRET`).
+
+Add these back to `vercel.json` `crons` array:
 
 ```json
 {
@@ -24,10 +28,32 @@ When you want to implement the cron jobs later, add this to your `vercel.json`:
     {
       "path": "/api/cron/purge-payloads",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/drain-logs",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/process-refunds",
+      "schedule": "30 5 * * *"
     }
   ]
 }
 ```
 
-`purge-payloads` drops raw `html_payload` from fetch_tasks older than
-`PAYLOAD_RETENTION_DAYS` (default 7) to keep Postgres storage bounded.
+| Cron | Schedule | Purpose |
+|------|----------|---------|
+| `health-alerts` | Every 5 min | Worker/Ollama/node heartbeat + ops alerts |
+| `contributor-ops` | Hourly | Stale fetches, payouts, delivery + webhook retries |
+| `scheduled-exports` | Daily 02:00 UTC | Per-org batch exports |
+| `analytics-snapshots` | Daily 03:00 UTC | Daily metrics aggregation |
+| `purge-payloads` | Daily 04:00 UTC | Drop raw `html_payload` older than `PAYLOAD_RETENTION_DAYS` (default 7) |
+| `drain-logs` | Daily 05:00 UTC | Log drain / retention |
+| `process-refunds` | Daily 05:30 UTC | Refund processing |
+
+Manual trigger (requires `CRON_SECRET`):
+
+```bash
+curl -X POST "https://app.syftin.io/api/cron/contributor-ops" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
