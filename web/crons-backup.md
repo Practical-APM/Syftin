@@ -1,10 +1,29 @@
 # Vercel Cron Jobs Configuration
 
-Vercel Hobby allows **one** cron per project. `vercel.json` currently runs only
-`health-alerts`. Re-enable the rest when you upgrade to Pro (or run them via an
-external scheduler hitting the same routes with `CRON_SECRET`).
+**Vercel Hobby blocks deploys** if any cron would run more than once per day
+(e.g. `*/5 * * * *` or `0 * * * *`). `vercel.json` has **no crons** so deploys
+succeed on Hobby. Trigger jobs externally (see below) or add a **once-daily**
+schedule after upgrading to Pro.
 
-Add these back to `vercel.json` `crons` array:
+## Once-daily only (Hobby-safe)
+
+If you want one built-in Vercel cron on Hobby, use a daily expression only:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/contributor-ops",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
+```
+
+## Full schedule (Pro / external scheduler)
+
+Re-enable in `vercel.json` on Pro, or ping these routes from cron-job.org,
+GitHub Actions, etc. with `Authorization: Bearer $CRON_SECRET`:
 
 ```json
 {
@@ -51,9 +70,12 @@ Add these back to `vercel.json` `crons` array:
 | `drain-logs` | Daily 05:00 UTC | Log drain / retention |
 | `process-refunds` | Daily 05:30 UTC | Refund processing |
 
-Manual trigger (requires `CRON_SECRET`):
+Manual trigger (requires `CRON_SECRET` on Vercel):
 
 ```bash
+curl -X POST "https://app.syftin.io/api/cron/health-alerts" \
+  -H "Authorization: Bearer $CRON_SECRET"
+
 curl -X POST "https://app.syftin.io/api/cron/contributor-ops" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
