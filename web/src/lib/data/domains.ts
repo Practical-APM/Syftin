@@ -39,6 +39,11 @@ export type LegalGovernanceInput = {
   legal_notes?: string;
 };
 
+export type FetchProfileInput = {
+  stealth_profile?: Record<string, unknown> | null;
+  poison_markers?: string[] | null;
+};
+
 declare global {
   // Demo-mode in-memory whitelist (persists for dev server session)
   var __syftinMockDomains: string[] | undefined;
@@ -268,6 +273,43 @@ export async function updateWhitelistLegalGovernance(
     .eq("domain", normalized)
     .select(
       "id, domain, vertical, is_active, legal_basis, tos_url, legal_reviewed_by, legal_reviewed_at, legal_review_due_at, legal_notes",
+    )
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true, entry: data as WhitelistEntry };
+}
+
+export async function updateWhitelistFetchProfile(
+  domain: string,
+  input: FetchProfileInput,
+): Promise<{ success: boolean; entry?: WhitelistEntry; error?: string }> {
+  const normalized = normalizeDomainInput(domain);
+  if (!normalized) {
+    return { success: false, error: "Invalid domain." };
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: "Fetch profiles require Supabase." };
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (input.stealth_profile !== undefined) {
+    payload.stealth_profile = input.stealth_profile;
+  }
+  if (input.poison_markers !== undefined) {
+    payload.poison_markers = input.poison_markers ?? [];
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("whitelist_domains")
+    .update(payload)
+    .eq("domain", normalized)
+    .select(
+      "id, domain, vertical, is_active, base_fee_paise, per_record_paise, price_tier, requires_consensus, execution_suspended, suspension_reason, legal_basis, tos_url, legal_reviewed_by, legal_reviewed_at, legal_review_due_at, legal_notes, stealth_profile, poison_markers",
     )
     .single();
 

@@ -1,5 +1,5 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { signWebhookPayload } from "@/lib/data/webhook-signing";
 import { getPublicSiteUrl, isSupabaseConfigured } from "@/lib/env";
 import {
   apiKeyPrefix,
@@ -224,27 +224,7 @@ export type WebhookPayload = {
   data?: Record<string, unknown>[];
 };
 
-export function signWebhookPayload(
-  body: string,
-  secret: string,
-): string {
-  const digest = createHmac("sha256", secret).update(body).digest("hex");
-  return `sha256=${digest}`;
-}
-
-export function verifyWebhookSignature(
-  body: string,
-  signature: string | null,
-  secret: string,
-): boolean {
-  if (!signature?.startsWith("sha256=")) return false;
-  const expected = signWebhookPayload(body, secret);
-  try {
-    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
+export { signWebhookPayload, verifyWebhookSignature } from "@/lib/data/webhook-signing";
 
 const MAX_INLINE_ROWS = 500;
 const MAX_INLINE_BYTES = 100_000;
@@ -485,6 +465,13 @@ export async function deliverJob(
     maybeDispatchBatchWebhookEvents(jobId),
     maybeDispatchJobPartialEvent(jobId),
   ]);
+
+  if (eventType === "job.completed") {
+    const { supersedeProcessingJobRuns } = await import(
+      "@/lib/data/incremental-output"
+    );
+    await supersedeProcessingJobRuns(jobId).catch(console.error);
+  }
 
   return { webhook, bucket, sftp, warehouse };
 }

@@ -37,6 +37,7 @@ export type FetchTask = {
   required_region?: string | null;
   example_schema?: Record<string, unknown>;
   stealth_profile?: Record<string, unknown> | null;
+  poison_markers?: string[] | null;
 };
 
 const MAX_HTML_BYTES = 2_000_000;
@@ -348,6 +349,7 @@ export async function claimNextFetchTask(
     ...task,
     example_schema: jobRow?.example_schema,
     stealth_profile: whitelist?.stealth_profile ?? null,
+    poison_markers: whitelist?.poison_markers ?? null,
   } as FetchTask;
 }
 

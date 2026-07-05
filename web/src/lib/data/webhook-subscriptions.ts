@@ -1,20 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured, getPublicSiteUrl } from "@/lib/env";
-import { signWebhookPayload } from "@/lib/data/delivery";
+import type { WebhookSubscriptionEvent } from "@/lib/data/webhook-subscription-events";
+import { signWebhookPayload } from "@/lib/data/webhook-signing";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type WebhookSubscriptionEvent =
-  | "job.completed"
-  | "job.failed"
-  | "job.partial"
-  | "job.page_completed"
-  | "batch.completed"
-  | "batch.shard_failed"
-  | "batch.shard_completed"
-  | "batch.partial"
-  | "batch.cancelled"
-  | "credit.low";
+export type { WebhookSubscriptionEvent } from "@/lib/data/webhook-subscription-events";
+export {
+  SUBSCRIBABLE_WEBHOOK_EVENTS,
+  WEBHOOK_EVENT_LABELS,
+} from "@/lib/data/webhook-subscription-events";
 
 export type WebhookSubscription = {
   id: string;

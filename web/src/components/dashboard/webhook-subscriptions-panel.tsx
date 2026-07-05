@@ -5,16 +5,17 @@ import { Webhook, Plus, Trash2, Edit2, Loader2 } from "lucide-react";
 import { Panel } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InlineError } from "@/components/ui/error-fallback";
-import type { WebhookSubscription, WebhookSubscriptionEvent } from "@/lib/data/webhook-subscriptions";
+import {
+  SUBSCRIBABLE_WEBHOOK_EVENTS,
+  WEBHOOK_EVENT_LABELS,
+  type WebhookSubscriptionEvent,
+} from "@/lib/data/webhook-subscription-events";
+import type { WebhookSubscription } from "@/lib/data/webhook-subscriptions";
 
-const AVAILABLE_EVENTS: { value: WebhookSubscriptionEvent; label: string }[] = [
-  { value: "job.completed", label: "Job completed" },
-  { value: "job.failed", label: "Job failed" },
-  { value: "batch.completed", label: "Batch completed" },
-  { value: "batch.shard_failed", label: "Batch shard failed" },
-  { value: "batch.cancelled", label: "Batch cancelled" },
-  { value: "credit.low", label: "Low credit balance" },
-];
+const AVAILABLE_EVENTS = SUBSCRIBABLE_WEBHOOK_EVENTS.map((value) => ({
+  value,
+  label: WEBHOOK_EVENT_LABELS[value],
+}));
 
 export function WebhookSubscriptionsPanel() {
   const [subs, setSubs] = useState<WebhookSubscription[]>([]);

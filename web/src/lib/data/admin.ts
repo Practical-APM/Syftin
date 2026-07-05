@@ -28,6 +28,9 @@ export type AdminOverview = {
     domainsPendingReview: number;
     domainsReviewOverdue: number;
   };
+  truthArbiter?: {
+    pending: number;
+  };
   infra: {
     payloadStorageConfigured: boolean;
     emailApiConfigured: boolean;
@@ -51,6 +54,9 @@ export type AdminOrganization = {
   dpa_signed_at: string | null;
   billing_stream_locked: boolean;
   billing_lock_reason: string | null;
+  sla_tier: "pilot" | "business" | "enterprise";
+  extraction_tier: "standard" | "business" | "premium";
+  hub_only_extraction: boolean;
   created_at: string;
   member_count: number;
   job_count: number;
@@ -82,6 +88,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         domainsPendingReview: 0,
         domainsReviewOverdue: 0,
       },
+      truthArbiter: { pending: 0 },
       infra: {
         payloadStorageConfigured: isPayloadStorageConfigured(),
         emailApiConfigured: isEmailConfigured(),
@@ -94,7 +101,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const supabase = createAdminClient();
   const billingStats = await getBillingGuardStats();
 
-  const [orgsRes, jobsRes, invitesRes, heartbeatRes, fleet, fetchTasksRes, edgeJobsRes, domainsRes] =
+  const [orgsRes, jobsRes, invitesRes, heartbeatRes, fleet, fetchTasksRes, edgeJobsRes, domainsRes, arbiterRes] =
     await Promise.all([
       supabase.from("organizations").select("id", { count: "exact", head: true }),
       supabase.from("jobs").select("status"),
@@ -119,6 +126,10 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         .from("whitelist_domains")
         .select("legal_reviewed_at, legal_review_due_at, is_active")
         .eq("is_active", true),
+      supabase
+        .from("truth_arbiter_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
     ]);
 
   const jobs: Record<string, number> = {
@@ -180,6 +191,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       totalDomains: (domainsRes.data ?? []).length,
       domainsPendingReview,
       domainsReviewOverdue,
+    },
+    truthArbiter: {
+      pending: arbiterRes.error ? 0 : (arbiterRes.count ?? 0),
     },
     infra: {
       payloadStorageConfigured: isPayloadStorageConfigured(),
@@ -295,6 +309,9 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
         dpa_signed_at: new Date().toISOString(),
         billing_stream_locked: false,
         billing_lock_reason: null,
+        sla_tier: "pilot",
+        extraction_tier: "standard",
+        hub_only_extraction: false,
         created_at: new Date().toISOString(),
         member_count: 1,
         job_count: 0,
@@ -305,7 +322,7 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
   const supabase = createAdminClient();
   const { data: orgs, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, credit_balance_cents, dpa_signed_at, billing_stream_locked, billing_lock_reason, created_at")
+    .select("id, name, slug, credit_balance_cents, dpa_signed_at, billing_stream_locked, billing_lock_reason, sla_tier, extraction_tier, hub_only_extraction, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -326,6 +343,11 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
       return {
         ...org,
         credit_balance_cents: Number(org.credit_balance_cents ?? 0),
+        sla_tier: (org.sla_tier as AdminOrganization["sla_tier"]) ?? "pilot",
+        extraction_tier:
+          (org.extraction_tier as AdminOrganization["extraction_tier"]) ??
+          "standard",
+        hub_only_extraction: Boolean(org.hub_only_extraction),
         member_count: membersRes.count ?? 0,
         job_count: jobsRes.count ?? 0,
       } as AdminOrganization;

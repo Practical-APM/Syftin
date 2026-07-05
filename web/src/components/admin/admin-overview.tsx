@@ -31,6 +31,9 @@ type Overview = {
     domainsPendingReview: number;
     domainsReviewOverdue: number;
   };
+  truthArbiter?: {
+    pending: number;
+  };
   infra?: {
     payloadStorageConfigured: boolean;
     emailApiConfigured: boolean;
@@ -223,6 +226,21 @@ export function AdminOverviewClient() {
                   </AlertBanner>
                 )}
               </Panel>
+            )}
+
+            {data.truthArbiter && data.truthArbiter.pending > 0 && (
+              <AlertBanner variant="warning">
+                <p className="font-medium">
+                  {data.truthArbiter.pending} truth arbiter task
+                  {data.truthArbiter.pending === 1 ? "" : "s"} awaiting review
+                </p>
+                <p className="mt-1 text-sm">
+                  Hub vs edge semantic mismatches on consensus domains.{" "}
+                  <Link href="/admin/truth" className="text-honey-600">
+                    Open queue →
+                  </Link>
+                </p>
+              </AlertBanner>
             )}
 
             {data.governance && data.governance.totalDomains > 0 && (

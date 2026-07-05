@@ -5,6 +5,7 @@ import {
   getWhitelistDomains,
   removeWhitelistDomain,
   clearDomainSuspension,
+  updateWhitelistFetchProfile,
   updateWhitelistLegalGovernance,
 } from "@/lib/data/domains";
 import { sanitizeDomainInput } from "@/lib/sanitize";
@@ -123,6 +124,54 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: cleared.error }, { status: 400 });
       }
       return NextResponse.json({ ok: true });
+    }
+
+    if (
+      body.stealth_profile !== undefined ||
+      body.poison_markers !== undefined
+    ) {
+      let stealthProfile: Record<string, unknown> | null = null;
+      if (body.stealth_profile != null && body.stealth_profile !== "") {
+        if (typeof body.stealth_profile === "string") {
+          try {
+            stealthProfile = JSON.parse(body.stealth_profile) as Record<
+              string,
+              unknown
+            >;
+          } catch {
+            return NextResponse.json(
+              { error: "stealth_profile must be valid JSON" },
+              { status: 400 },
+            );
+          }
+        } else if (typeof body.stealth_profile === "object") {
+          stealthProfile = body.stealth_profile as Record<string, unknown>;
+        }
+      }
+
+      let poisonMarkers: string[] | null = null;
+      if (body.poison_markers != null) {
+        if (Array.isArray(body.poison_markers)) {
+          poisonMarkers = body.poison_markers.map(String);
+        } else if (typeof body.poison_markers === "string") {
+          poisonMarkers = body.poison_markers
+            .split("\n")
+            .map((s: string) => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      const profileResult = await updateWhitelistFetchProfile(domain, {
+        stealth_profile: stealthProfile,
+        poison_markers: poisonMarkers,
+      });
+      if (!profileResult.success) {
+        return NextResponse.json(
+          { error: profileResult.error ?? "Profile update failed" },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json({ domain: profileResult.entry });
     }
 
     const result = await updateWhitelistLegalGovernance(domain, {

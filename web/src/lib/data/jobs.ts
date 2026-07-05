@@ -29,6 +29,7 @@ import { assertOrgEmailVerifiedForJobs } from "@/lib/data/org-gates";
 import {
   getOrgSlaTier,
   getOrgExtractionTier,
+  getOrgHubOnlyExtraction,
   jobPriorityForSlaTier,
 } from "@/lib/data/org-sla";
 import { assertDomainExecutionAllowed } from "@/lib/data/domains";
@@ -265,20 +266,39 @@ export async function createJob(
     isPhase2Enabled() &&
     process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
 
+  const orgIdForJob = input.organization_id ?? orgId;
+  const hubOnly = await getOrgHubOnlyExtraction(orgIdForJob);
+  const useDistributed = distributed && !hubOnly;
+
+  let jobSchema = serverMeta.schema;
+  if (hubOnly) {
+    const syftin = jobSchema._syftin;
+    jobSchema = {
+      ...jobSchema,
+      _syftin: {
+        ...(syftin && typeof syftin === "object" && !Array.isArray(syftin)
+          ? syftin
+          : {}),
+        hub_only: true,
+        distributed_pagination: false,
+      },
+    };
+  }
+
   const jobTier = requiredTierForDomain(domain);
-  const slaTier = await getOrgSlaTier(input.organization_id ?? orgId);
+  const slaTier = await getOrgSlaTier(orgIdForJob);
   const priority = jobPriorityForSlaTier(slaTier);
 
   const { data, error } = await supabase
     .from("jobs")
     .insert({
-      organization_id: input.organization_id ?? orgId,
+      organization_id: orgIdForJob,
       name,
       target_url,
       domain,
-      example_schema: serverMeta.schema,
+      example_schema: jobSchema,
       status: "pending",
-      requires_edge_fetch: distributed,
+      requires_edge_fetch: useDistributed,
       compute_tier: jobTier,
       required_region: input.required_region ?? null,
       priority,
@@ -299,14 +319,14 @@ export async function createJob(
     }
   }
 
-  if (distributed && data) {
+  if (useDistributed && data) {
     await createFetchTaskForJob(
       data.id,
       target_url,
       domain,
       jobTier,
       input.required_region,
-      serverMeta.schema,
+      jobSchema,
     );
   }
 

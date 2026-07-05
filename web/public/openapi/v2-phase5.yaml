@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: Syftin API — Phase 5 extensions
+  version: "2.0"
+  description: |
+    Sync scrape, DPDP erasure, audit bundles, and progressive webhook events.
+    Base URL is your Syftin deployment (e.g. https://app.syftin.io).
+servers:
+  - url: /api/v2
+paths:
+  /scrape:
+    post:
+      summary: Synchronous structured scrape
+      description: |
+        Creates a priority hub-only job and blocks until completion or timeout.
+        Requires `NEXT_PUBLIC_PHASE4_ENABLED` and API key with `write` scope.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScrapeRequest"
+      responses:
+        "200":
+          description: Scrape completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScrapeResponse"
+        "504":
+          description: Timed out waiting for job completion
+        "502":
+          description: Job failed
+  /erasure:
+    post:
+      summary: DPDP data erasure
+      description: Purges stored payloads and extracted records for a job.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id]
+              properties:
+                job_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Erasure accepted
+  /jobs/{id}/audit:
+    get:
+      summary: Exportable audit bundle
+      description: |
+        Compliance export combining delivery manifest, page results, delivery logs,
+        webhook deliveries, truth arbiter tasks, and sync-scrape audit rows.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Audit bundle JSON
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Organization API key
+
+  schemas:
+    ScrapeRequest:
+      type: object
+      required: [target_url, example_schema]
+      properties:
+        target_url:
+          type: string
+          format: uri
+        example_schema:
+          type: object
+          description: Field template for structured extraction
+        name:
+          type: string
+        output_format:
+          type: string
+          enum: [json, markdown, both]
+          default: json
+        timeout_ms:
+          type: integer
+          minimum: 5000
+          maximum: 300000
+          default: 90000
+
+    ScrapeResponse:
+      type: object
+      properties:
+        api_version:
+          type: string
+          example: v2
+        job_id:
+          type: string
+          format: uuid
+        data:
+          type: array
+          items:
+            type: object
+        markdown:
+          type: string
+        compliance_score:
+          type: number
+        record_count:
+          type: integer
+        variance_flags:
+          type: array
+          items:
+            type: string
+        latency_ms:
+          type: integer
+
+    JobPageCompletedWebhook:
+      type: object
+      description: Progressive delivery event (webhook subscription)
+      properties:
+        event:
+          type: string
+          enum: [job.page_completed]
+        job_id:
+          type: string
+          format: uuid
+        page_index:
+          type: integer
+        record_count:
+          type: integer
+        cursor:
+          type: string
+          description: Idempotency cursor `{job_id}:{page_index}`
+        status:
+          type: string

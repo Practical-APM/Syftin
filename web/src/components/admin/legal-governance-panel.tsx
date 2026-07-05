@@ -17,7 +17,10 @@ export function LegalGovernancePanel({
   const [reviewedBy, setReviewedBy] = useState("");
   const [reviewDue, setReviewDue] = useState("");
   const [notes, setNotes] = useState("");
+  const [stealthJson, setStealthJson] = useState("");
+  const [poisonMarkers, setPoisonMarkers] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const entry = domains.find((d) => d.domain === selected);
@@ -37,7 +40,38 @@ export function LegalGovernancePanel({
     setReviewedBy(d?.legal_reviewed_by ?? "");
     setReviewDue(d?.legal_review_due_at?.slice(0, 10) ?? "");
     setNotes(d?.legal_notes ?? "");
+    setStealthJson(
+      d?.stealth_profile
+        ? JSON.stringify(d.stealth_profile, null, 2)
+        : "",
+    );
+    setPoisonMarkers((d?.poison_markers ?? []).join("\n"));
     setMessage(null);
+  }
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selected) return;
+    setSavingProfile(true);
+    setMessage(null);
+
+    const res = await fetch("/api/domains", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        domain: selected,
+        stealth_profile: stealthJson.trim() || null,
+        poison_markers: poisonMarkers,
+      }),
+    });
+
+    setSavingProfile(false);
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Profile save failed");
+      return;
+    }
+    setMessage("Fetch profile saved.");
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -183,6 +217,33 @@ export function LegalGovernancePanel({
           )}
           {message && <span className="text-xs text-honey-600">{message}</span>}
         </div>
+      </form>
+
+      <form onSubmit={handleSaveProfile} className="space-y-3 border-t border-ivory-200 pt-4 dark:border-graphite-700">
+        <h4 className="text-xs font-medium uppercase tracking-wide text-graphite-500">
+          Fetch hardening (Phase 5)
+        </h4>
+        <textarea
+          value={stealthJson}
+          onChange={(e) => setStealthJson(e.target.value)}
+          placeholder='Stealth profile JSON e.g. {"user_agent":"..."}'
+          rows={4}
+          className="w-full rounded-lg border border-ivory-200 bg-white px-3 py-2 font-mono text-xs dark:border-graphite-700 dark:bg-graphite-900"
+        />
+        <textarea
+          value={poisonMarkers}
+          onChange={(e) => setPoisonMarkers(e.target.value)}
+          placeholder="Poison markers (one per line) e.g. access denied"
+          rows={3}
+          className="w-full rounded-lg border border-ivory-200 bg-white px-3 py-2 font-mono text-xs dark:border-graphite-700 dark:bg-graphite-900"
+        />
+        <Button type="submit" size="sm" variant="outline" disabled={savingProfile}>
+          {savingProfile ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            "Save fetch profile"
+          )}
+        </Button>
       </form>
     </div>
   );

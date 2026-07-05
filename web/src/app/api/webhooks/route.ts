@@ -4,19 +4,10 @@ import { isAuthRequired, isSupabaseConfigured } from "@/lib/env";
 import {
   listWebhookSubscriptions,
   createWebhookSubscription,
+  SUBSCRIBABLE_WEBHOOK_EVENTS,
   type CreateWebhookSubscriptionInput,
   type WebhookSubscriptionEvent,
 } from "@/lib/data/webhook-subscriptions";
-
-const ALLOWED_EVENTS: WebhookSubscriptionEvent[] = [
-  "job.completed",
-  "job.failed",
-  "job.partial",
-  "batch.completed",
-  "batch.shard_failed",
-  "batch.cancelled",
-  "credit.low",
-];
 
 async function getOrgId(request: Request): Promise<string | null> {
   if (!isAuthRequired() && !isSupabaseConfigured()) {
@@ -87,12 +78,14 @@ export async function POST(request: Request) {
   }
 
   const validatedEvents = events.filter((e): e is WebhookSubscriptionEvent =>
-    ALLOWED_EVENTS.includes(e as WebhookSubscriptionEvent),
+    SUBSCRIBABLE_WEBHOOK_EVENTS.includes(e as WebhookSubscriptionEvent),
   );
 
   if (validatedEvents.length !== events.length) {
     return NextResponse.json(
-      { error: `Invalid events. Allowed: ${ALLOWED_EVENTS.join(", ")}` },
+      {
+        error: `Invalid events. Allowed: ${SUBSCRIBABLE_WEBHOOK_EVENTS.join(", ")}`,
+      },
       { status: 400 },
     );
   }

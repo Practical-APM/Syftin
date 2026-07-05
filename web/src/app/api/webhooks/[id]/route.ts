@@ -4,18 +4,9 @@ import { isAuthRequired, isSupabaseConfigured } from "@/lib/env";
 import {
   updateWebhookSubscription,
   deleteWebhookSubscription,
+  SUBSCRIBABLE_WEBHOOK_EVENTS,
   type WebhookSubscriptionEvent,
 } from "@/lib/data/webhook-subscriptions";
-
-const ALLOWED_EVENTS: WebhookSubscriptionEvent[] = [
-  "job.completed",
-  "job.failed",
-  "job.partial",
-  "batch.completed",
-  "batch.shard_failed",
-  "batch.cancelled",
-  "credit.low",
-];
 
 async function getOrgId(): Promise<string | null> {
   if (!isAuthRequired() && !isSupabaseConfigured()) {
@@ -71,7 +62,7 @@ export async function PATCH(
   if (typeof description === "string") patch.description = description;
   if (Array.isArray(events)) {
     const validated = events.filter((e): e is WebhookSubscriptionEvent =>
-      ALLOWED_EVENTS.includes(e as WebhookSubscriptionEvent),
+      SUBSCRIBABLE_WEBHOOK_EVENTS.includes(e as WebhookSubscriptionEvent),
     );
     patch.events = validated;
   }

@@ -62,3 +62,14 @@ export async function mergeIncrementalJobOutput(
     .eq("id", jobId)
     .in("status", ["pending", "queued", "processing", "validating"]);
 }
+
+/** Mark stale progressive partial runs before the final completed job_run. */
+export async function supersedeProcessingJobRuns(jobId: string): Promise<void> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  await admin
+    .from("job_runs")
+    .update({ status: "failed", finished_at: now })
+    .eq("job_id", jobId)
+    .eq("status", "processing");
+}
