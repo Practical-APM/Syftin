@@ -29,6 +29,9 @@ export function useAccessRequest({
 
     if (canUseMagicLink) {
       const supabase = createClient();
+      // Cookie survives Supabase redirect URL allow-list quirks when query params are stripped.
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `syftin_auth_next=${encodeURIComponent(next)}; path=/; max-age=600; SameSite=Lax${secure}`;
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email: trimmed,

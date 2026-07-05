@@ -13,7 +13,12 @@ export default async function ContributorLayout({
   children: React.ReactNode;
 }) {
   if (!isPhase2Enabled()) {
-    redirect("/dashboard");
+    redirect(
+      "/login?next=/contributor&error=phase2&message=" +
+        encodeURIComponent(
+          "Contributor portal is disabled on this deployment. Set NEXT_PUBLIC_PHASE2_ENABLED=true in Vercel and redeploy.",
+        ),
+    );
   }
 
   let contributor = await getSessionContributor();

@@ -9,14 +9,19 @@ import { isPhase2EnabledClient } from "@/lib/env";
 export function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
-  const authError = searchParams.get("error") === "auth";
+  const errorCode = searchParams.get("error");
   const inviteMessage = searchParams.get("message");
 
-  const initialError = authError
-    ? "Sign-in link expired or invalid. Please try again."
-    : inviteMessage
-      ? decodeURIComponent(inviteMessage)
-      : null;
+  const initialError =
+    errorCode === "auth"
+      ? "Sign-in link expired or invalid. Please try again."
+      : errorCode === "phase2"
+        ? (inviteMessage
+            ? decodeURIComponent(inviteMessage)
+            : "Contributor portal is not enabled on this deployment.")
+        : inviteMessage
+          ? decodeURIComponent(inviteMessage)
+          : null;
 
   const isContributor = next.startsWith("/contributor");
 
