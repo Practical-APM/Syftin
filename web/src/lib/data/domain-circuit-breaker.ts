@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
+import { sendOpsAlerts } from "@/lib/security/alerts";
 
 const WINDOW_MS = 60_000;
 const MIN_DISTINCT_NODES = 5;
@@ -64,6 +65,15 @@ export async function recordDomainValidationEvent(
   console.warn(
     `[domain-circuit-breaker] suspended ${domain}: ${(failureRate * 100).toFixed(1)}% failure across ${distinctNodes.size} nodes`,
   );
+
+  await sendOpsAlerts([
+    {
+      key: `domain-suspended-${domain}`,
+      severity: "critical",
+      title: `Domain execution suspended: ${domain}`,
+      detail: `${(failureRate * 100).toFixed(1)}% validation failure across ${distinctNodes.size} nodes in 60s (${reason}). New jobs blocked; update parsing template and clear suspension in admin.`,
+    },
+  ]);
 
   return { suspended: true, reason };
 }

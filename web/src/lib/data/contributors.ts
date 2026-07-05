@@ -40,6 +40,7 @@ export type ContributorNode = {
   tasks_completed: number;
   created_at: string;
   resource_telemetry: NodeResourceTelemetry | null;
+  ip_cooldown_until?: string | null;
 };
 
 export type ContributorEarning = {
@@ -206,7 +207,7 @@ export async function listContributorNodes(
   const { data, error } = await admin
     .from("contributor_nodes")
     .select(
-      "id, machine_label, hostname, compute_tier, detected_tier, node_type, fetch_mode, playwright_ready, connection_metered, capabilities, status, last_seen_at, tasks_completed, created_at, resource_telemetry",
+      "id, machine_label, hostname, compute_tier, detected_tier, node_type, fetch_mode, playwright_ready, connection_metered, capabilities, status, last_seen_at, tasks_completed, created_at, resource_telemetry, ip_cooldown_until",
     )
     .eq("contributor_id", contributor.contributorId)
     .order("created_at", { ascending: false });

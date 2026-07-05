@@ -8,8 +8,11 @@ export type WebhookSubscriptionEvent =
   | "job.completed"
   | "job.failed"
   | "job.partial"
+  | "job.page_completed"
   | "batch.completed"
   | "batch.shard_failed"
+  | "batch.shard_completed"
+  | "batch.partial"
   | "batch.cancelled"
   | "credit.low";
 
@@ -267,9 +270,15 @@ export async function dispatchSubscriptionEvent(
 export async function dispatchBatchEvent(
   orgId: string,
   batchId: string,
-  eventType: "batch.completed" | "batch.shard_failed" | "batch.cancelled",
+  eventType:
+    | "batch.completed"
+    | "batch.shard_failed"
+    | "batch.shard_completed"
+    | "batch.partial"
+    | "batch.cancelled",
   meta: {
     batchName?: string;
+    shardJobId?: string;
     totalShards?: number;
     completedShards?: number;
     failedShards?: number;
@@ -278,6 +287,7 @@ export async function dispatchBatchEvent(
   await dispatchSubscriptionEvent(orgId, eventType, batchId, {
     batch_id: batchId,
     batch_name: meta.batchName ?? null,
+    shard_job_id: meta.shardJobId ?? null,
     total_shards: meta.totalShards ?? null,
     completed_shards: meta.completedShards ?? null,
     failed_shards: meta.failedShards ?? null,

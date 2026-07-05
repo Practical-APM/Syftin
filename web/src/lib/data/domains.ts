@@ -26,6 +26,8 @@ export type WhitelistEntry = {
   legal_reviewed_at?: string | null;
   legal_review_due_at?: string | null;
   legal_notes?: string | null;
+  stealth_profile?: Record<string, unknown> | null;
+  poison_markers?: string[] | null;
 };
 
 export type LegalGovernanceInput = {
@@ -61,7 +63,7 @@ export async function getWhitelistDomains(): Promise<WhitelistEntry[]> {
   const { data, error } = await supabase
     .from("whitelist_domains")
     .select(
-      "id, domain, vertical, is_active, base_fee_paise, per_record_paise, price_tier, requires_consensus, execution_suspended, suspension_reason, legal_basis, tos_url, legal_reviewed_by, legal_reviewed_at, legal_review_due_at, legal_notes",
+      "id, domain, vertical, is_active, base_fee_paise, per_record_paise, price_tier, requires_consensus, execution_suspended, suspension_reason, legal_basis, tos_url, legal_reviewed_by, legal_reviewed_at, legal_review_due_at, legal_notes, stealth_profile, poison_markers",
     )
     .eq("is_active", true)
     .order("domain");
@@ -102,6 +104,37 @@ export async function isWhitelistedUrl(url: string): Promise<boolean> {
   return domainMatchesWhitelist(domain, allowed);
 }
 
+/** Block new jobs when circuit breaker or admin has suspended execution. */
+export async function assertDomainExecutionAllowed(
+  domain: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) return { ok: true };
+
+  const normalized = normalizeDomainInput(domain) ?? domain.trim().toLowerCase();
+  const admin = createAdminClient();
+  const { data: suspendedRows } = await admin
+    .from("whitelist_domains")
+    .select("domain, suspension_reason")
+    .eq("execution_suspended", true);
+
+  for (const row of suspendedRows ?? []) {
+    const suspendedDomain = row.domain as string;
+    if (
+      normalized === suspendedDomain ||
+      domainMatchesWhitelist(normalized, [suspendedDomain])
+    ) {
+      const reason =
+        (row.suspension_reason as string | null) ?? "EXECUTION_SUSPENDED";
+      return {
+        ok: false,
+        error: `Extraction for ${normalized} is temporarily suspended (${reason}). In-flight jobs may still complete; new jobs are blocked until an admin clears suspension.`,
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 export type AddDomainResult =
   | { success: true; entry: WhitelistEntry }
   | { success: false; error: string };
@@ -128,11 +161,12 @@ export async function addWhitelistDomain(
   const benchEntry = await import("@/lib/data/benchmarks").then((m) =>
     m.getDomainBenchmarkEntry(domain),
   );
-  if (
+  const needsPlaywright =
     benchEntry?.fetchMethod &&
     benchEntry.fetchMethod !== "http" &&
-    benchEntry.fetchMethod !== "static"
-  ) {
+    benchEntry.fetchMethod !== "static";
+
+  if (needsPlaywright) {
     const { markDomainPlaywrightRequired } = await import(
       "@/lib/contributor/fetch-tier"
     );
@@ -150,12 +184,18 @@ export async function addWhitelistDomain(
   }
 
   const supabase = createAdminClient();
+  const upsertPayload: Record<string, unknown> = {
+    domain,
+    vertical: vertical ?? null,
+    is_active: true,
+  };
+  if (needsPlaywright) {
+    upsertPayload.legal_notes = "min_fetch_tier:ranger";
+  }
+
   const { data, error } = await supabase
     .from("whitelist_domains")
-    .upsert(
-      { domain, vertical: vertical ?? null, is_active: true },
-      { onConflict: "domain" },
-    )
+    .upsert(upsertPayload, { onConflict: "domain" })
     .select("id, domain, vertical, is_active")
     .single();
 

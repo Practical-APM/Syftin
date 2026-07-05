@@ -10,6 +10,7 @@ import {
 
 import { validateJobVolumeInput } from "@/lib/pricing/estimates";
 import { getOrgVerified } from "@/lib/data/email-verification";
+import { assertOrgEmailVerifiedForJobs } from "@/lib/data/org-gates";
 
 export async function GET() {
   const auth = await requireApiAuth();
@@ -41,6 +42,11 @@ export async function POST(request: Request) {
       { error: "Accept the Data Processing Agreement before creating batches." },
       { status: 403 },
     );
+  }
+
+  const emailGate = await assertOrgEmailVerifiedForJobs(auth.org.orgId);
+  if (!emailGate.ok) {
+    return NextResponse.json({ error: emailGate.error }, { status: 403 });
   }
 
   try {

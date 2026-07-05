@@ -14,6 +14,7 @@ export type JobFetchProgress = {
   claimed: number;
   failed: number;
   expired: number;
+  recordsExtracted: number;
   tasks: FetchTaskProgress[];
 };
 
@@ -58,6 +59,16 @@ export async function getJobFetchProgress(
     else if (t.status === "expired") expired++;
   }
 
+  const { data: pageRows } = await admin
+    .from("job_page_results")
+    .select("record_count")
+    .eq("job_id", jobId);
+
+  const recordsExtracted = (pageRows ?? []).reduce(
+    (sum, row) => sum + Number(row.record_count ?? 0),
+    0,
+  );
+
   return {
     total: tasks.length,
     completed,
@@ -65,6 +76,7 @@ export async function getJobFetchProgress(
     claimed,
     failed,
     expired,
+    recordsExtracted,
     tasks,
   };
 }

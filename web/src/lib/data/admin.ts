@@ -334,3 +334,42 @@ export async function listOrganizations(): Promise<AdminOrganization[]> {
 
   return enriched;
 }
+
+export type UnderDeliveredJob = {
+  id: string;
+  name: string;
+  domain: string;
+  organization_id: string;
+  record_count: number | null;
+  created_at: string;
+  variance_flags: string[];
+};
+
+export async function listUnderDeliveredJobs(
+  limit = 20,
+): Promise<UnderDeliveredJob[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("jobs")
+    .select(
+      "id, name, domain, organization_id, record_count, created_at, variance_flags",
+    )
+    .eq("status", "completed")
+    .contains("variance_flags", ["under_delivered"])
+    .order("completed_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    domain: row.domain as string,
+    organization_id: row.organization_id as string,
+    record_count: row.record_count as number | null,
+    created_at: row.created_at as string,
+    variance_flags: (row.variance_flags as string[]) ?? [],
+  }));
+}

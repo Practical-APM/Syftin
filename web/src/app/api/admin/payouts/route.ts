@@ -35,11 +35,27 @@ export async function GET() {
       listPendingPayouts(),
       listRecentPayouts(),
     ]);
+
+    const pendingTotalPaise = payouts.reduce((s, p) => s + p.amount_paise, 0);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const disbursedTodayPaise = recent
+      .filter(
+        (p) =>
+          (p.status === "completed" || p.status === "approved") &&
+          new Date(p.updated_at ?? p.created_at).getTime() >=
+            todayStart.getTime(),
+      )
+      .reduce((s, p) => s + p.amount_paise, 0);
+
     return NextResponse.json({
       payouts,
       recent,
       razorpayXEnabled: isRazorpayXConfigured(),
       autoDisburse: isAutoDisbursePayoutsEnabled(),
+      pendingTotalPaise,
+      disbursedTodayPaise,
+      dailyOutLimitPaise: 2_500_000,
     });
   } catch (err) {
     return NextResponse.json(

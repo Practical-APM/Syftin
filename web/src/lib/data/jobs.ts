@@ -25,6 +25,14 @@ import {
 import { resetFetchTasksForJobRetry } from "@/lib/data/fetch-progress";
 import { expireFetchTasksForJob } from "@/lib/data/fetch-tasks";
 import { assertOrgBillingUnlocked } from "@/lib/data/billing-guards";
+import { assertOrgEmailVerifiedForJobs } from "@/lib/data/org-gates";
+import {
+  getOrgSlaTier,
+  getOrgExtractionTier,
+  jobPriorityForSlaTier,
+} from "@/lib/data/org-sla";
+import { assertDomainExecutionAllowed } from "@/lib/data/domains";
+import { assertDomainLegalBasisForSchema } from "@/lib/compliance/schema-sensitive";
 import { sanitizeJobInput } from "@/lib/sanitize";
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
 import { buildServerJobSchema } from "@/lib/pricing/server-job-meta";
@@ -48,6 +56,7 @@ type DbJob = {
   created_at: string;
   completed_at: string | null;
   required_region: string | null;
+  variance_flags?: string[] | null;
 };
 
 function mapDbJob(row: DbJob): Job {
@@ -69,6 +78,9 @@ function mapDbJob(row: DbJob): Job {
     parent_batch_id: row.parent_batch_id,
     shard_index: row.shard_index,
     required_region: row.required_region,
+    variance_flags: Array.isArray(row.variance_flags)
+      ? row.variance_flags
+      : [],
     result_url:
       row.status === "completed"
         ? `/api/jobs/${row.id}/result`
@@ -142,6 +154,7 @@ export type CreateJobInput = {
   required_region?: string;
   budget_cents?: number;
   max_records?: number;
+  output_format?: "json" | "markdown" | "both";
 };
 
 export type CreateJobResult =
@@ -169,6 +182,11 @@ export async function createJob(
     return { success: false, error: billing.error };
   }
 
+  const emailGate = await assertOrgEmailVerifiedForJobs(workspace.orgId);
+  if (!emailGate.ok) {
+    return { success: false, error: emailGate.error };
+  }
+
   const orgDomains = await getOrgDomainList(workspace.orgId);
   const workspaceScoped = orgDomains.length > 0;
 
@@ -182,6 +200,19 @@ export async function createJob(
   const domain = extractDomain(target_url);
   if (!domain) {
     return { success: false, error: "Invalid URL format." };
+  }
+
+  const executionGate = await assertDomainExecutionAllowed(domain);
+  if (!executionGate.ok) {
+    return { success: false, error: executionGate.error };
+  }
+
+  const legalGate = await assertDomainLegalBasisForSchema(
+    domain,
+    input.example_schema,
+  );
+  if (!legalGate.ok) {
+    return { success: false, error: legalGate.error };
   }
 
   if (!isSupabaseConfigured()) {
@@ -212,6 +243,7 @@ export async function createJob(
     targetUrl: target_url,
     maxRecords: input.max_records,
     budgetCents: input.budget_cents,
+    extractionTier: await getOrgExtractionTier(input.organization_id ?? orgId),
   });
   if ("error" in serverMeta) {
     return { success: false, error: serverMeta.error };
@@ -234,6 +266,8 @@ export async function createJob(
     process.env.PHASE2_DISTRIBUTED_FETCH !== "false";
 
   const jobTier = requiredTierForDomain(domain);
+  const slaTier = await getOrgSlaTier(input.organization_id ?? orgId);
+  const priority = jobPriorityForSlaTier(slaTier);
 
   const { data, error } = await supabase
     .from("jobs")
@@ -247,6 +281,8 @@ export async function createJob(
       requires_edge_fetch: distributed,
       compute_tier: jobTier,
       required_region: input.required_region ?? null,
+      priority,
+      output_format: input.output_format ?? "json",
     })
     .select("*")
     .single();
@@ -302,6 +338,11 @@ export async function retryJob(
 
   if (job.status !== "failed") {
     return { success: false, error: "Only failed jobs can be retried." };
+  }
+
+  const executionGate = await assertDomainExecutionAllowed(job.domain);
+  if (!executionGate.ok) {
+    return { success: false, error: executionGate.error };
   }
 
   if (job.requires_edge_fetch) {

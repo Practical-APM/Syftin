@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
+import { mergeIncrementalJobOutput } from "@/lib/data/incremental-output";
 import {
   buildFailedWebhookPayload,
   buildWebhookPayload,
@@ -95,6 +96,65 @@ export async function maybeDispatchJobPartialEvent(
   await dispatchSubscriptionEvent(
     job.organization_id as string,
     "job.partial",
+    jobId,
+    payload,
+  ).catch(console.error);
+}
+
+export type PageCompletedPayload = {
+  pageIndex: number;
+  recordCount: number;
+  records?: unknown[];
+};
+
+/** Progressive delivery: notify after each distributed page extracts. */
+export async function dispatchJobPageCompletedEvent(
+  jobId: string,
+  page: PageCompletedPayload,
+): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const admin = createAdminClient();
+  const { data: job } = await admin
+    .from("jobs")
+    .select("id, organization_id, name, domain, target_url, status, record_count")
+    .eq("id", jobId)
+    .single();
+
+  if (!job) return;
+
+  const orgId = job.organization_id as string;
+  const cursor = `${jobId}:${page.pageIndex}`;
+
+  if (page.records?.length) {
+    await admin.from("job_page_results").upsert(
+      {
+        job_id: jobId,
+        page_index: page.pageIndex,
+        target_url: job.target_url,
+        record_count: page.recordCount,
+        records: page.records,
+        cursor_token: cursor,
+      },
+      { onConflict: "job_id,page_index" },
+    );
+    await mergeIncrementalJobOutput(jobId, page.records).catch(console.error);
+  }
+
+  const payload = {
+    event: "job.page_completed",
+    job_id: job.id,
+    name: job.name,
+    domain: job.domain,
+    page_index: page.pageIndex,
+    record_count: page.recordCount,
+    cursor,
+    status: job.status,
+  };
+
+  await dispatchSubscriptionEvent(
+    orgId,
+    "job.page_completed",
     jobId,
     payload,
   ).catch(console.error);

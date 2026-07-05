@@ -53,6 +53,12 @@ export async function POST(request: Request) {
         );
       }
 
+      const { assertOrgEmailVerifiedForJobs } = await import("@/lib/data/org-gates");
+      const emailGate = await assertOrgEmailVerifiedForJobs(auth.orgId);
+      if (!emailGate.ok) {
+        return NextResponse.json({ error: emailGate.error }, { status: 403 });
+      }
+
       const body = await request.json();
       const {
         name,

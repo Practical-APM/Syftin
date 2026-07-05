@@ -45,8 +45,32 @@ export async function maybeDispatchBatchWebhookEvents(
 
   if (!batch) return;
 
+  if (job.status === "completed") {
+    await dispatchBatchEvent(orgId, batchId, "batch.shard_completed", {
+      batchName: batch.name as string,
+      shardJobId: jobId,
+      totalShards: batch.total_shards as number,
+      completedShards: batch.completed_shards as number,
+      failedShards: batch.failed_shards as number,
+    });
+  }
+
   if (job.status === "failed") {
     await dispatchBatchEvent(orgId, batchId, "batch.shard_failed", {
+      batchName: batch.name as string,
+      totalShards: batch.total_shards as number,
+      completedShards: batch.completed_shards as number,
+      failedShards: batch.failed_shards as number,
+    });
+  }
+
+  if (
+    (batch.status === "completed" || batch.status === "failed") &&
+    (batch.failed_shards as number) > 0 &&
+    (batch.completed_shards as number) > 0 &&
+    !(await batchEventAlreadyDispatched(batchId, "batch.partial"))
+  ) {
+    await dispatchBatchEvent(orgId, batchId, "batch.partial", {
       batchName: batch.name as string,
       totalShards: batch.total_shards as number,
       completedShards: batch.completed_shards as number,

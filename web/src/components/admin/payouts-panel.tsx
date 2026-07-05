@@ -13,6 +13,9 @@ export function AdminPayoutsPanel() {
   const [payouts, setPayouts] = useState<PayoutEvent[]>([]);
   const [recent, setRecent] = useState<PayoutEvent[]>([]);
   const [razorpayXEnabled, setRazorpayXEnabled] = useState(false);
+  const [pendingTotalPaise, setPendingTotalPaise] = useState(0);
+  const [disbursedTodayPaise, setDisbursedTodayPaise] = useState(0);
+  const [dailyOutLimitPaise, setDailyOutLimitPaise] = useState(2_500_000);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -30,6 +33,9 @@ export function AdminPayoutsPanel() {
     setPayouts(data.payouts ?? []);
     setRecent(data.recent ?? []);
     setRazorpayXEnabled(Boolean(data.razorpayXEnabled));
+    setPendingTotalPaise(Number(data.pendingTotalPaise ?? 0));
+    setDisbursedTodayPaise(Number(data.disbursedTodayPaise ?? 0));
+    setDailyOutLimitPaise(Number(data.dailyOutLimitPaise ?? 2_500_000));
     setLoading(false);
   }, []);
 
@@ -65,6 +71,32 @@ export function AdminPayoutsPanel() {
         }
       />
       <DashboardPage>
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-ivory-200 bg-white px-4 py-3">
+            <p className="text-xs text-graphite-500">Pending batch</p>
+            <p className="text-lg font-semibold text-graphite-900">
+              {formatPaise(pendingTotalPaise)}
+            </p>
+            <p className="text-[10px] text-graphite-400">
+              Max 5 auto-disbursements per cron run
+            </p>
+          </div>
+          <div className="rounded-lg border border-ivory-200 bg-white px-4 py-3">
+            <p className="text-xs text-graphite-500">Disbursed today</p>
+            <p className="text-lg font-semibold text-emerald-700">
+              {formatPaise(disbursedTodayPaise)}
+            </p>
+            <p className="text-[10px] text-graphite-400">
+              Pilot cap ₹25k/day ({formatPaise(dailyOutLimitPaise)})
+            </p>
+          </div>
+          <div className="rounded-lg border border-ivory-200 bg-white px-4 py-3">
+            <p className="text-xs text-graphite-500">Headroom today</p>
+            <p className="text-lg font-semibold text-graphite-900">
+              {formatPaise(Math.max(0, dailyOutLimitPaise - disbursedTodayPaise))}
+            </p>
+          </div>
+        </div>
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-graphite-500">
             <Loader2 className="h-4 w-4 animate-spin" />

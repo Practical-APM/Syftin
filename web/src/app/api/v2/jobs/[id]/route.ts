@@ -49,6 +49,7 @@ export async function GET(
           ? {
               v1: buildDownloadUrls(job.id),
               v2: buildV2DownloadUrls(job.id),
+              audit: `${getPublicSiteUrl()}/api/v2/jobs/${job.id}/audit`,
             }
           : null,
     });

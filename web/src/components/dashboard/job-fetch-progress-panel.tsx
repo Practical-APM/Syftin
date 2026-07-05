@@ -23,6 +23,10 @@ export function JobFetchProgressPanel({
       ? Math.round((progress.completed / progress.total) * 100)
       : 0;
   const waitingForCapacity = inFlight > 0 && progress.completed === 0;
+  const hubFallbackActive =
+    progress.failed > 0 || progress.expired > 0
+      ? progress.completed < progress.total
+      : false;
 
   return (
     <Panel>
@@ -34,11 +38,18 @@ export function JobFetchProgressPanel({
         {inFlight > 0 && ` · ${inFlight} in progress`}
         {progress.failed > 0 && ` · ${progress.failed} failed`}
         {progress.expired > 0 && ` · ${progress.expired} timed out`}
+        {progress.recordsExtracted > 0 &&
+          ` · ${progress.recordsExtracted.toLocaleString()} records streamed`}
       </p>
       {waitingForCapacity && (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-          Waiting for contributor capacity — the hub will self-serve if no node
-          picks up pages within about 10 minutes.
+          Waiting for contributors — the hub will self-serve if no node picks up
+          pages within about 10 minutes.
+        </p>
+      )}
+      {hubFallbackActive && !waitingForCapacity && (
+        <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+          Hub completing remaining pages after contributor timeouts or failures.
         </p>
       )}
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-graphite-800">

@@ -14,6 +14,10 @@ import {
   type JobEconomics,
   workerPayoutCeilingPaise,
 } from "@/lib/pricing/job-economics";
+import {
+  perRecordMultiplierForExtractionTier,
+  type ExtractionTier,
+} from "@/lib/data/org-sla";
 
 export type ServerJobMetaResult = {
   schema: Record<string, unknown>;
@@ -61,6 +65,7 @@ export async function buildServerJobSchema(input: {
   targetUrl?: string;
   maxRecords?: number;
   budgetCents?: number;
+  extractionTier?: ExtractionTier;
 }): Promise<ServerJobMetaResult | { ok: false; error: string }> {
   const pricing = await resolveDomainPricing(input.domain);
   const budgetPaise =
@@ -83,6 +88,9 @@ export async function buildServerJobSchema(input: {
     budgetPaise,
     urlCount: 1,
     defaultTarget: DEFAULT_TARGET_RECORDS,
+    extractionTierMultiplier: perRecordMultiplierForExtractionTier(
+      input.extractionTier ?? "standard",
+    ),
   });
 
   const budgetCents =

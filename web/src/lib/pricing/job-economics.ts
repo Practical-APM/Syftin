@@ -163,6 +163,7 @@ export function buildJobEconomics(input: {
   budgetPaise?: number;
   urlCount?: number;
   defaultTarget?: number;
+  extractionTierMultiplier?: number;
 }): JobEconomics {
   const urlCount = Math.max(1, input.urlCount ?? 1);
   const limits = resolveRecordLimits({
@@ -178,6 +179,15 @@ export function buildJobEconomics(input: {
     limits.effectiveRecords,
     urlCount,
   );
+
+  const extractionMultiplier =
+    input.extractionTierMultiplier != null &&
+    input.extractionTierMultiplier > 0
+      ? input.extractionTierMultiplier
+      : 1;
+  if (extractionMultiplier !== 1) {
+    grossRevenuePaise = Math.round(grossRevenuePaise * extractionMultiplier);
+  }
 
   if (input.budgetPaise != null && input.budgetPaise > 0) {
     grossRevenuePaise = Math.min(grossRevenuePaise, input.budgetPaise);

@@ -12,6 +12,7 @@ import { VarianceFlagsPanel } from "@/components/dashboard/variance-flags-panel"
 import { JobFetchProgressPanel } from "@/components/dashboard/job-fetch-progress-panel";
 import { Button } from "@/components/ui/button";
 import type { JobFetchProgress } from "@/lib/data/fetch-progress";
+import { useJobFetchProgressRealtime } from "@/hooks/use-job-fetch-progress-realtime";
 import { useJobsRealtime } from "@/hooks/use-jobs-realtime";
 import { jobDownloadUrl } from "@/lib/jobs-utils";
 import {
@@ -38,6 +39,10 @@ export function JobDetailClient({
     focusJobId: initialJob.id,
   });
   const job = jobs[0] ?? initialJob;
+  const liveFetchProgress = useJobFetchProgressRealtime(
+    job.id,
+    fetchProgress,
+  );
   const canCancel = CANCELLABLE_STATUSES.includes(job.status);
 
   async function handleRetry() {
@@ -133,8 +138,8 @@ export function JobDetailClient({
             </dl>
           </Panel>
 
-          {fetchProgress && fetchProgress.total > 0 && (
-            <JobFetchProgressPanel progress={fetchProgress} />
+          {liveFetchProgress && liveFetchProgress.total > 0 && (
+            <JobFetchProgressPanel progress={liveFetchProgress} />
           )}
 
           {job.status === "failed" && (
@@ -215,6 +220,13 @@ export function JobDetailClient({
               >
                 <ArrowDownToLine className="h-4 w-4" />
                 Delivery manifest
+              </a>
+              <a
+                href={`/api/jobs/${job.id}/audit-bundle`}
+                className="inline-flex items-center gap-2 rounded-lg border border-graphite-200 px-4 py-2.5 text-sm font-medium text-graphite-700 transition-colors hover:border-honey-500/40 hover:text-honey-600"
+              >
+                <ArrowDownToLine className="h-4 w-4" />
+                Audit bundle
               </a>
             </div>
           ) : (

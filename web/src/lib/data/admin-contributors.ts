@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 import { sweepStaleContributorNodes } from "@/lib/data/contributors";
@@ -38,9 +39,19 @@ export type AdminContributorFleet = {
     pendingFetchTasks: number;
     avgTasksPerNode: number;
     cgnatRiskHigh: boolean;
+    tasksPerNodeDay: number;
+    estimatedCapacityPerNodeDay: number;
+    pingFreshnessMinutesP50: number | null;
+    pingFreshnessMinutesP95: number | null;
   };
   ipWarnings: { ip: string; nodeCount: number }[];
 };
+
+function percentile(sorted: number[], p: number): number | null {
+  if (sorted.length === 0) return null;
+  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, idx)] ?? null;
+}
 
 export async function getAdminContributorFleet(): Promise<AdminContributorFleet> {
   if (!isSupabaseConfigured()) {
@@ -78,6 +89,10 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
         pendingFetchTasks: 0,
         avgTasksPerNode: 42,
         cgnatRiskHigh: false,
+        tasksPerNodeDay: 12,
+        estimatedCapacityPerNodeDay: 24,
+        pingFreshnessMinutesP50: 2,
+        pingFreshnessMinutesP95: 8,
       },
       ipWarnings: [],
     };
@@ -149,6 +164,49 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
     allNodes.length > 0 ? Math.round(totalTasks / allNodes.length) : 0;
   const cgnatRiskHigh = ipWarnings.some((w) => w.nodeCount > 5);
 
+  const dayAgo = new Date(Date.now() - 86400000).toISOString();
+  const { count: completedTasks24h } = await admin
+    .from("fetch_tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "completed")
+    .gte("completed_at", dayAgo);
+
+  const tasksPerNodeDay =
+    allNodes.length > 0
+      ? Math.round((completedTasks24h ?? 0) / allNodes.length)
+      : 0;
+
+  const fleetSize = Number(process.env.PILOT_FLEET_SIZE) || 50;
+  const estimatedCapacityPerNodeDay = Math.max(
+    1,
+    Math.round((8.5 * 8 * 60) / fleetSize),
+  );
+
+  const onlineNodeIds = allNodes
+    .filter((n) => n.status === "online")
+    .map((n) => n.id);
+  let pingFreshnessMinutesP50: number | null = null;
+  let pingFreshnessMinutesP95: number | null = null;
+
+  if (onlineNodeIds.length > 0) {
+    const { data: subs } = await admin
+      .from("node_subscriptions")
+      .select("last_ping_at")
+      .in("node_id", onlineNodeIds);
+
+    const minutesAgo = (subs ?? [])
+      .map((s) => {
+        const t = new Date(s.last_ping_at as string).getTime();
+        return Math.max(0, (Date.now() - t) / 60_000);
+      })
+      .sort((a, b) => a - b);
+
+    if (minutesAgo.length > 0) {
+      pingFreshnessMinutesP50 = percentile(minutesAgo, 50);
+      pingFreshnessMinutesP95 = percentile(minutesAgo, 95);
+    }
+  }
+
   return {
     contributors,
     stats: {
@@ -158,7 +216,32 @@ export async function getAdminContributorFleet(): Promise<AdminContributorFleet>
       pendingFetchTasks: fetchRes.count ?? 0,
       avgTasksPerNode,
       cgnatRiskHigh,
+      tasksPerNodeDay,
+      estimatedCapacityPerNodeDay,
+      pingFreshnessMinutesP50,
+      pingFreshnessMinutesP95,
     },
     ipWarnings,
   };
+}
+
+/** Invalidate a stolen or compromised node token (forces re-register). */
+export async function revokeContributorNode(nodeId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const admin = createAdminClient();
+  const revokedHash = createHash("sha256")
+    .update(`revoked:${nodeId}:${Date.now()}`)
+    .digest("hex");
+
+  const { error } = await admin
+    .from("contributor_nodes")
+    .update({
+      token_hash: revokedHash,
+      status: "offline",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", nodeId);
+
+  if (error) throw new Error(error.message);
 }

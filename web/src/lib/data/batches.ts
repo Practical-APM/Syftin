@@ -21,6 +21,9 @@ import {
 import { requiredTierForDomain } from "@/lib/contributor/fetch-tier";
 import { sanitizeJobInput } from "@/lib/sanitize";
 import { assertOrgBillingUnlocked } from "@/lib/data/billing-guards";
+import { assertOrgEmailVerifiedForJobs } from "@/lib/data/org-gates";
+import { assertDomainExecutionAllowed } from "@/lib/data/domains";
+import { assertDomainLegalBasisForSchema } from "@/lib/compliance/schema-sensitive";
 import { buildServerBatchSchema } from "@/lib/pricing/server-job-meta";
 import { expireFetchTasksForJob } from "@/lib/data/fetch-tasks";
 import { refundFailedShards } from "@/lib/data/credits";
@@ -148,6 +151,11 @@ export async function createBatch(
     return { success: false, error: billing.error };
   }
 
+  const emailGate = await assertOrgEmailVerifiedForJobs(workspace.orgId);
+  if (!emailGate.ok) {
+    return { success: false, error: emailGate.error };
+  }
+
   const orgDomains = await getOrgDomainList(workspace.orgId);
   const workspaceScoped = orgDomains.length > 0;
 
@@ -175,8 +183,24 @@ export async function createBatch(
     if (!domain) {
        return { success: false, error: `Invalid URL format: ${url}` };
     }
-    
+
+    const executionGate = await assertDomainExecutionAllowed(domain);
+    if (!executionGate.ok) {
+      return { success: false, error: executionGate.error };
+    }
+
     validUrls.push({ url: sanitized.sanitized.target_url, domain });
+  }
+
+  const uniqueDomains = [...new Set(validUrls.map((u) => u.domain))];
+  for (const batchDomain of uniqueDomains) {
+    const legalGate = await assertDomainLegalBasisForSchema(
+      batchDomain,
+      input.example_schema,
+    );
+    if (!legalGate.ok) {
+      return { success: false, error: legalGate.error };
+    }
   }
 
   if (!isSupabaseConfigured()) {

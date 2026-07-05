@@ -117,7 +117,7 @@ export function NodeCapacityEstimator({
               Estimated monthly income
             </span>
             <span className="text-[10px] text-graphite-500">
-              Pilot rates ·{" "}
+              Pilot rates · per-task payout drops on large paginated jobs (margin-lock) ·{" "}
               <Link href="/contributor/earnings" className="text-honey-400 hover:text-honey-300">
                 payout rules in Earnings
               </Link>

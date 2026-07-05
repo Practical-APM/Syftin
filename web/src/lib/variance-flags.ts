@@ -42,6 +42,12 @@ export function formatVarianceFlag(flag: string): string {
   if (flag === "truth_hub_check_failed") {
     return "Hub truth verification could not complete";
   }
+  if (flag === "truth_semantic_divergence") {
+    return "Hub and contributor extractions disagree on field values";
+  }
+  if (flag === "pipeline_prefetch") {
+    return "Hub used fetch prefetch while extracting previous page";
+  }
   if (flag === "html_poison_marker") {
     return "Page content resembles a block or CAPTCHA interstitial";
   }

@@ -18,8 +18,12 @@ import {
   payloadObjectExists,
 } from "@/lib/storage/payload-storage";
 import {
-  isIpAtCapacity,
-} from "@/lib/data/fleet-caps";
+  nodeCanClaimTier,
+  nodeCapacityScore,
+  sortTasksForNodeCapacity,
+} from "@/lib/data/claim-capacity";
+import type { NodeResourceTelemetry } from "@/lib/contributor/resource-settings";
+import { isIpAtCapacity } from "@/lib/data/fleet-caps";
 
 export type FetchTask = {
   id: string;
@@ -32,6 +36,7 @@ export type FetchTask = {
   consensus_group_id?: string | null;
   required_region?: string | null;
   example_schema?: Record<string, unknown>;
+  stealth_profile?: Record<string, unknown> | null;
 };
 
 const MAX_HTML_BYTES = 2_000_000;
@@ -118,7 +123,7 @@ export async function claimNextFetchTask(
   const { data: node } = await admin
     .from("contributor_nodes")
     .select(
-      "connection_metered, compute_tier, detected_tier, playwright_ready, ip_cooldown_until, last_seen_ip",
+      "connection_metered, compute_tier, detected_tier, playwright_ready, ip_cooldown_until, last_seen_ip, resource_telemetry",
     )
     .eq("id", nodeId)
     .single();
@@ -129,6 +134,11 @@ export async function claimNextFetchTask(
 
   if (!node) return null;
 
+  const capacity = nodeCapacityScore(
+    node.resource_telemetry as NodeResourceTelemetry | null,
+  );
+  if (capacity < 0) return null;
+
   const cooldownUntil = node.ip_cooldown_until as string | null;
   if (cooldownUntil && new Date(cooldownUntil).getTime() > Date.now()) {
     return null;
@@ -138,6 +148,15 @@ export async function claimNextFetchTask(
   if (effectiveIp) {
     const ipCap = await isIpAtCapacity(admin, effectiveIp);
     if (ipCap.blocked) {
+      if (ipCap.applyCooldown) {
+        const { setIpCooldownForNode } = await import("@/lib/data/fleet-caps");
+        await setIpCooldownForNode(
+          admin,
+          nodeId,
+          effectiveIp,
+          "hourly claim cap",
+        );
+      }
       return null;
     }
   }
@@ -180,8 +199,9 @@ export async function claimNextFetchTask(
 
   const { data: pending, error } = await admin
     .from("fetch_tasks")
-    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, required_region, jobs(organization_id, example_schema)")
+    .select("id, job_id, target_url, domain, status, required_tier, task_type, consensus_group_id, required_region, priority, jobs(organization_id, example_schema)")
     .eq("status", "pending")
+    .order("priority", { ascending: false })
     .order("created_at", { ascending: true })
     .limit(PENDING_SCAN_LIMIT);
 
@@ -202,6 +222,8 @@ export async function claimNextFetchTask(
       return 0;
     });
   }
+
+  const capacitySorted = sortTasksForNodeCapacity(pending, capacity);
 
   const { data: nodeHistory } = await admin
     .from("fetch_tasks")
@@ -244,8 +266,14 @@ export async function claimNextFetchTask(
     }
   }
 
-  const match = pending.find((task) => {
+  const match = capacitySorted.find((task) => {
     if (suspended.has(task.domain)) return false;
+
+    if (
+      !nodeCanClaimTier(capacity, (task.required_tier ?? "scout") as ComputeTier)
+    ) {
+      return false;
+    }
 
     const jobRow = task.jobs as
       | { organization_id?: string; example_schema?: Record<string, unknown> }
@@ -314,9 +342,12 @@ export async function claimNextFetchTask(
     jobs?: { example_schema?: Record<string, unknown> } | null;
   };
 
+  const whitelist = await getWhitelistEntryForDomain(task.domain as string);
+
   return {
     ...task,
     example_schema: jobRow?.example_schema,
+    stealth_profile: whitelist?.stealth_profile ?? null,
   } as FetchTask;
 }
 
@@ -545,6 +576,16 @@ export async function failFetchTask(
       admin,
       nodeId,
       nodeRow?.last_seen_ip as string | null,
+      "fetch blocked (403/captcha)",
+    );
+  } else {
+    const { maybeCooldownIpForFailureSpike } = await import(
+      "@/lib/data/fleet-caps"
+    );
+    await maybeCooldownIpForFailureSpike(
+      admin,
+      nodeRow?.last_seen_ip as string | null,
+      nodeId,
     );
   }
 

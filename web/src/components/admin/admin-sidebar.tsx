@@ -13,6 +13,8 @@ import {
   IndianRupee,
   LogOut,
   Mail,
+  RotateCcw,
+  Scale,
   Shield,
 } from "lucide-react";
 import { SyftinLogo } from "@/components/brand/syftin-logo";
@@ -26,9 +28,11 @@ const navItems = [
   { href: "/admin/contributor-invites", label: "Contributor invites", icon: Mail },
   { href: "/admin/contributors", label: "Contributor fleet", icon: Cpu },
   { href: "/admin/payouts", label: "Payouts", icon: IndianRupee },
+  { href: "/admin/refunds", label: "Refunds", icon: RotateCcw },
   { href: "/admin/revenue", label: "Revenue", icon: IndianRupee },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/benchmarks", label: "Benchmarks", icon: FlaskConical },
+  { href: "/admin/truth", label: "Truth arbiter", icon: Scale },
 ];
 
 export function AdminSidebar() {

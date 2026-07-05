@@ -26,6 +26,16 @@ export function isPlaywrightRequiredDomain(domain: string): boolean {
   return JS_HEAVY_DOMAINS.has(d) || benchmarkPlaywrightDomains.has(d);
 }
 
+/** Parse persisted tier hint from whitelist legal_notes. */
+export function minFetchTierFromLegalNotes(
+  legalNotes: string | null | undefined,
+): ComputeTier | null {
+  if (!legalNotes) return null;
+  if (legalNotes.includes("min_fetch_tier:ranger")) return "ranger";
+  if (legalNotes.includes("min_fetch_tier:titan")) return "titan";
+  return null;
+}
+
 const TIER_RANK: Record<ComputeTier, number> = {
   scout: 1,
   ranger: 2,

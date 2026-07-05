@@ -133,6 +133,23 @@ export function ContributorNodesPanel() {
             No devices registered yet. Add one above, then download the installer.
           </p>
         ) : (
+          <>
+            {nodes.some(
+              (n) =>
+                n.ip_cooldown_until &&
+                new Date(n.ip_cooldown_until).getTime() > Date.now(),
+            ) && (
+              <AlertBanner variant="warning">
+                <p className="font-medium text-amber-200">
+                  Fetching paused on your network
+                </p>
+                <p className="mt-1 text-sm text-graphite-300">
+                  A target site rate-limited your public IP after block-like errors.
+                  New tasks are paused for about an hour so normal browsing recovers.
+                  Pause the node under Network if Amazon or other sites still break.
+                </p>
+              </AlertBanner>
+            )}
           <div className="app-data-table overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
@@ -186,6 +203,13 @@ export function ContributorNodesPanel() {
                       >
                         {node.status}
                       </span>
+                      {node.ip_cooldown_until &&
+                        new Date(node.ip_cooldown_until).getTime() > Date.now() && (
+                          <p className="mt-1 text-[10px] text-amber-400">
+                            IP cooldown until{" "}
+                            {formatDate(node.ip_cooldown_until)}
+                          </p>
+                        )}
                     </td>
                     <td className="px-5 py-4 text-graphite-300">{node.tasks_completed}</td>
                     <td className="px-5 py-4 text-xs text-graphite-500">
@@ -196,6 +220,7 @@ export function ContributorNodesPanel() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </DashboardPage>
     </>

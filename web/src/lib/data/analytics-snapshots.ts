@@ -146,6 +146,28 @@ export async function captureDailyAnalyticsSnapshots(): Promise<{
     await upsert("job_latency_p95", percentile(sorted, 95));
   }
 
+  const { data: pageResults } = await admin
+    .from("job_page_results")
+    .select("job_id, created_at, jobs!inner(created_at)")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd);
+
+  const ttfr: number[] = [];
+  for (const row of pageResults ?? []) {
+    const jobCreated = (row.jobs as { created_at?: string } | null)?.created_at;
+    if (jobCreated && row.created_at) {
+      const ms =
+        new Date(row.created_at as string).getTime() -
+        new Date(jobCreated).getTime();
+      if (ms > 0) ttfr.push(ms);
+    }
+  }
+  if (ttfr.length) {
+    const sorted = [...ttfr].sort((a, b) => a - b);
+    await upsert("time_to_first_record_p50", percentile(sorted, 50));
+    await upsert("time_to_first_record_p95", percentile(sorted, 95));
+  }
+
   // Revenue-share health (Phase 3 targets: contributor share ≥65% of buyer
   // charge; ledger reconciliation within ±₹0.01, i.e. delta ~0 paise).
   const { data: ledger } = await admin

@@ -133,6 +133,9 @@ export function BenchmarksPanel() {
                     <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
                       Status
                     </th>
+                    <th className="px-5 py-3 text-xs font-medium text-graphite-500 dark:text-graphite-400">
+                      Re-run
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,6 +179,20 @@ export function BenchmarksPanel() {
                             {row.passed ? "Pass" : "Below target"}
                           </span>
                         )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <button
+                          type="button"
+                          title={`cd worker && bash scripts/run-benchmarks.sh (includes ${row.domain})`}
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              "cd worker && bash scripts/run-benchmarks.sh",
+                            )
+                          }
+                          className="text-xs font-medium text-honey-600 hover:text-honey-500 dark:text-honey-400"
+                        >
+                          Copy command
+                        </button>
                       </td>
                     </tr>
                   ))}

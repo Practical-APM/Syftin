@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   type ComputeTier,
+  minFetchTierFromLegalNotes,
   requiredTierForDomain,
   tierRank,
 } from "@/lib/contributor/fetch-tier";
@@ -479,6 +480,13 @@ export async function createFetchTaskForJob(
 
   let requiredTier = (jobComputeTier ??
     requiredTierForDomain(domain)) as ComputeTier;
+
+  const whitelistEntry = await getWhitelistEntryForDomain(domain);
+  const notesTier = minFetchTierFromLegalNotes(whitelistEntry?.legal_notes);
+  if (notesTier && tierRank(notesTier) > tierRank(requiredTier)) {
+    requiredTier = notesTier;
+  }
+
   const benchEntry = await getDomainBenchmarkEntry(domain);
   if (
     benchEntry?.fetchMethod &&
@@ -492,7 +500,7 @@ export async function createFetchTaskForJob(
   const economicsCtx = readSyftinEconomics(
     exampleSchema,
     domain,
-    await getWhitelistEntryForDomain(domain),
+    whitelistEntry,
   );
   const rewardCtx = {
     domain,
@@ -507,6 +515,13 @@ export async function createFetchTaskForJob(
 
   const admin = createAdminClient();
 
+  const { data: jobRow } = await admin
+    .from("jobs")
+    .select("priority")
+    .eq("id", jobId)
+    .maybeSingle();
+  const priority = (jobRow?.priority as number | undefined) ?? 0;
+
   if (requiresConsensus) {
     const groupId = crypto.randomUUID();
     await admin.from("fetch_tasks").insert([
@@ -520,6 +535,7 @@ export async function createFetchTaskForJob(
         required_tier: requiredTier,
         consensus_group_id: groupId,
         required_region: requiredRegion ?? null,
+        priority,
       },
       {
         job_id: jobId,
@@ -531,6 +547,7 @@ export async function createFetchTaskForJob(
         required_tier: requiredTier,
         consensus_group_id: groupId,
         required_region: requiredRegion ?? null,
+        priority,
       },
     ]);
   } else {
@@ -543,6 +560,7 @@ export async function createFetchTaskForJob(
       reward_paise: rewardPaise,
       required_tier: requiredTier,
       required_region: requiredRegion ?? null,
+      priority,
     });
   }
 }

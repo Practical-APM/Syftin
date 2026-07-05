@@ -1,9 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { claimNextFetchTask } from "@/lib/data/fetch-tasks";
 import { upsertNodeSubscription, updateNodeOffline } from "@/lib/data/subscriptions";
 import type { ComputeTier } from "@/lib/contributor/fetch-tier";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,52 +15,93 @@ export async function GET(request: Request) {
     return new Response("Missing parameters", { status: 400 });
   }
 
-  // Update subscription to online
   await upsertNodeSubscription(nodeId, contributorId, tier as ComputeTier);
 
   let isConnected = true;
+  const signaledTasks = new Set<string>();
 
   const stream = new ReadableStream({
     async start(controller) {
-      // Send initial connection event
-      try {
-        controller.enqueue(new TextEncoder().encode(`event: connected\ndata: {"status": "ok"}\n\n`));
-      } catch (e) {
-        isConnected = false;
-      }
+      const encoder = new TextEncoder();
+      const send = (event: string, data: Record<string, unknown>) => {
+        if (!isConnected) return;
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          isConnected = false;
+        }
+      };
 
-      // Loop to push task ready events
+      send("connected", { status: "ok" });
+
+      const admin = createAdminClient();
+      const channel = admin
+        .channel(`node-dispatch-${nodeId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "fetch_tasks" },
+          (payload) => {
+            const row = payload.new as {
+              id?: string;
+              domain?: string;
+              status?: string;
+              priority?: number;
+            } | null;
+            if (row?.status === "pending" && row.id) {
+              signaledTasks.add(row.id);
+              send("task_ready", {
+                task_id: row.id,
+                domain: row.domain,
+                priority: row.priority ?? 0,
+              });
+            }
+          },
+        )
+        .subscribe();
+
       while (isConnected) {
         try {
-          const admin = createAdminClient();
-          const { count, error } = await admin
+          const { data: tasks, error } = await admin
             .from("fetch_tasks")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "pending");
+            .select("id, domain, priority")
+            .eq("status", "pending")
+            .order("priority", { ascending: false })
+            .order("created_at", { ascending: true })
+            .limit(5);
 
-          if (!error && count && count > 0) {
-            controller.enqueue(new TextEncoder().encode(`event: task_ready\ndata: {"pending": ${count}}\n\n`));
+          if (!error && tasks?.length) {
+            for (const task of tasks) {
+              if (!signaledTasks.has(task.id as string)) {
+                signaledTasks.add(task.id as string);
+                send("task_ready", {
+                  task_id: task.id,
+                  domain: task.domain,
+                  priority: task.priority ?? 0,
+                });
+              }
+            }
           } else {
-            // Heartbeat
-            controller.enqueue(new TextEncoder().encode(`event: ping\ndata: {"time": "${Date.now()}"}\n\n`));
+            send("ping", { time: Date.now() });
           }
         } catch (e) {
           console.error("SSE stream error:", e);
         }
-        
-        // Wait 5 seconds before next check
+
         if (isConnected) {
-            await new Promise(r => setTimeout(r, 5000));
+          await new Promise((r) => setTimeout(r, 5000));
         }
       }
+
+      await admin.removeChannel(channel);
     },
     cancel() {
       isConnected = false;
       updateNodeOffline(nodeId).catch(console.error);
-    }
+    },
   });
 
-  // Handle client disconnect by checking if write fails, but also the Request signal
   request.signal.addEventListener("abort", () => {
     isConnected = false;
     updateNodeOffline(nodeId).catch(console.error);
@@ -70,7 +111,7 @@ export async function GET(request: Request) {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
     },
   });
 }

@@ -13,6 +13,7 @@ export function AdminContributorFleetClient() {
   const [data, setData] = useState<AdminContributorFleet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -34,6 +35,24 @@ export function AdminContributorFleetClient() {
     const id = setInterval(load, 20_000);
     return () => clearInterval(id);
   }, [load]);
+
+  async function revokeNode(nodeId: string) {
+    if (!confirm("Revoke this device token? The contributor must re-register.")) {
+      return;
+    }
+    setRevoking(nodeId);
+    setError(null);
+    const res = await fetch(`/api/admin/contributors/nodes/${nodeId}/revoke`, {
+      method: "POST",
+    });
+    const body = await res.json().catch(() => ({}));
+    setRevoking(null);
+    if (!res.ok) {
+      setError((body as { error?: string }).error ?? "Could not revoke node.");
+      return;
+    }
+    load();
+  }
 
   return (
     <>
@@ -73,6 +92,18 @@ export function AdminContributorFleetClient() {
                 }
               />
               <StatCard
+                label="Tasks / node / day"
+                value={`${data.stats.tasksPerNodeDay} (est. ${data.stats.estimatedCapacityPerNodeDay})`}
+              />
+              <StatCard
+                label="Ping freshness p50"
+                value={
+                  data.stats.pingFreshnessMinutesP50 != null
+                    ? `${data.stats.pingFreshnessMinutesP50.toFixed(0)}m`
+                    : "—"
+                }
+              />
+              <StatCard
                 label="Fleet health"
                 value={
                   data.stats.nodesTotal === 0
@@ -102,6 +133,11 @@ export function AdminContributorFleetClient() {
                       {w.nodeCount} nodes share public IP{" "}
                       <span className="font-mono">{w.ip}</span> — target sites may
                       rate-limit this address.
+                      {w.nodeCount > 5 && (
+                        <span className="ml-1 font-semibold text-red-700">
+                          (high risk)
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -154,6 +190,7 @@ export function AdminContributorFleetClient() {
                             <th className="px-5 py-3 font-medium">Status</th>
                             <th className="px-5 py-3 font-medium">Tasks</th>
                             <th className="px-5 py-3 font-medium">Last seen</th>
+                            <th className="px-5 py-3 font-medium" />
                           </tr>
                         </thead>
                         <tbody>
@@ -221,6 +258,16 @@ export function AdminContributorFleetClient() {
                                 {node.last_seen_at
                                   ? formatDate(node.last_seen_at)
                                   : "—"}
+                              </td>
+                              <td className="px-5 py-3 text-right">
+                                <button
+                                  type="button"
+                                  disabled={revoking === node.id}
+                                  onClick={() => revokeNode(node.id)}
+                                  className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+                                >
+                                  {revoking === node.id ? "Revoking…" : "Revoke token"}
+                                </button>
                               </td>
                             </tr>
                           ))}
