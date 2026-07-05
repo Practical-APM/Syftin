@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { normalizeAuthNext } from "@/lib/auth/normalize-next";
 import { applySecurityHeaders } from "@/lib/security/headers";
 import { isAuthRequired, isSupabaseClientConfigured } from "@/lib/env";
 
@@ -67,6 +68,17 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  if (
+    user &&
+    pathname === "/login" &&
+    request.nextUrl.searchParams.get("next")?.startsWith("/contributor")
+  ) {
+    const dest = normalizeAuthNext(request.nextUrl.searchParams.get("next"));
+    if (dest) {
+      return applySecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
+    }
+  }
 
   if (isAuthRequired() && !user && !isPublicPath(pathname)) {
     if (pathname.startsWith("/api/")) {

@@ -58,14 +58,22 @@ export function isAuthRequiredClient() {
 }
 
 /** Phase 2: distributed edge fetch + contributor portal */
+function contributorPortalConfigured() {
+  if (process.env.CONTRIBUTOR_OPEN === "true") return true;
+  return Boolean(process.env.CONTRIBUTOR_INVITE_EMAILS?.trim());
+}
+
 export function isPhase2Enabled() {
   if (process.env.NEXT_PUBLIC_PHASE2_ENABLED === "true") return true;
   if (process.env.NEXT_PUBLIC_PHASE2_ENABLED === "false") return false;
+  if (contributorPortalConfigured()) return true;
   return process.env.NODE_ENV === "development";
 }
 
 export function isPhase2EnabledClient() {
-  return process.env.NEXT_PUBLIC_PHASE2_ENABLED === "true" || isPhase2Enabled();
+  if (process.env.NEXT_PUBLIC_PHASE2_ENABLED === "true") return true;
+  if (process.env.NEXT_PUBLIC_PHASE2_ENABLED === "false") return false;
+  return process.env.NODE_ENV === "development";
 }
 
 /** Minimum UPI payout threshold in paise (₹500) */

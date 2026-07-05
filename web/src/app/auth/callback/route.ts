@@ -3,22 +3,27 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { provisionContributorUser } from "@/lib/auth/contributor";
 import { provisionPilotUser } from "@/lib/auth/org";
+import { normalizeAuthNext } from "@/lib/auth/normalize-next";
+import {
+  resolvePostAuthDestination,
+} from "@/lib/auth/post-auth";
 
 function resolveAuthNext(
   searchParams: URLSearchParams,
   cookieNext: string | undefined,
-): string {
-  const fromQuery = searchParams.get("next");
-  if (fromQuery?.startsWith("/")) return fromQuery;
-  if (cookieNext?.startsWith("/")) return cookieNext;
-  return "/dashboard";
+): string | null {
+  return (
+    normalizeAuthNext(searchParams.get("next")) ??
+    normalizeAuthNext(cookieNext) ??
+    null
+  );
 }
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const cookieStore = await cookies();
-  const next = resolveAuthNext(
+  const preferredNext = resolveAuthNext(
     searchParams,
     cookieStore.get("syftin_auth_next")?.value,
   );
@@ -27,6 +32,12 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user?.email) {
+      const next = await resolvePostAuthDestination({
+        email: data.user.email,
+        userId: data.user.id,
+        preferredNext,
+      });
+
       try {
         if (next.startsWith("/contributor")) {
           await provisionContributorUser(data.user.id, data.user.email);

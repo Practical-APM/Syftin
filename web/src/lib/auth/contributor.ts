@@ -26,7 +26,7 @@ export type SessionContributor = {
 
 const DEMO_CONTRIBUTOR_ID = "c0000000-0000-4000-8000-000000000001";
 
-function isContributorInvited(email: string): boolean {
+export function isContributorInvited(email: string): boolean {
   const list = process.env.CONTRIBUTOR_INVITE_EMAILS?.split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

@@ -17,7 +17,7 @@ function slugify(input: string): string {
     .slice(0, 40);
 }
 
-function isEmailInvited(email: string): boolean {
+export function isEmailInvited(email: string): boolean {
   const list = process.env.PILOT_INVITE_EMAILS?.split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

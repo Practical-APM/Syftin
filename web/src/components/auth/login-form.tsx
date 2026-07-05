@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SyftinLogo } from "@/components/brand/syftin-logo";
 import { AccessRequestForm } from "@/components/landing/access-request-form";
-import { isPhase2EnabledClient } from "@/lib/env";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -101,17 +100,6 @@ export function LoginForm() {
             </Link>
             .
           </p>
-          {isPhase2EnabledClient() && !isContributor && (
-            <p className="mt-4 text-center text-xs text-graphite-400 dark:text-graphite-400">
-              Running a worker node?{" "}
-              <Link
-                href="/login?next=/contributor"
-                className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500"
-              >
-                Contributor sign in
-              </Link>
-            </p>
-          )}
           {isContributor && (
             <p className="mt-4 text-center text-xs text-graphite-400 dark:text-graphite-400">
               Need the buyer dashboard?{" "}
@@ -120,6 +108,17 @@ export function LoginForm() {
                 className="font-medium text-honey-600 dark:text-honey-400 hover:text-honey-500"
               >
                 Business sign in
+              </Link>
+            </p>
+          )}
+          {!isContributor && (
+            <p className="mt-4 text-center text-xs text-graphite-400 dark:text-graphite-400">
+              Running a worker node?{" "}
+              <Link
+                href="/login?next=/contributor"
+                className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500"
+              >
+                Contributor sign in
               </Link>
             </p>
           )}
