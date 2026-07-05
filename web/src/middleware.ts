@@ -18,6 +18,7 @@ const PUBLIC_PATHS = [
 function isPublicPath(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname)) return true;
   if (pathname.startsWith("/auth/")) return true;
+  if (pathname.startsWith("/api/auth/contributor/")) return true;
   if (pathname.startsWith("/docs")) return true;
   if (pathname === "/api/health") return true;
   if (pathname === "/api/waitlist") return true;

@@ -6,6 +6,7 @@ import {
   normalizeResourceSettings,
   type ContributorResourceSettings,
 } from "@/lib/contributor/resource-settings";
+import { getDirectContributorLoginEmails } from "@/lib/auth/contributor-direct-login";
 
 export type SessionContributor = {
   contributorId: string;
@@ -27,6 +28,8 @@ export type SessionContributor = {
 const DEMO_CONTRIBUTOR_ID = "c0000000-0000-4000-8000-000000000001";
 
 export function isContributorInvited(email: string): boolean {
+  const normalized = email.toLowerCase();
+  if (getDirectContributorLoginEmails().includes(normalized)) return true;
   const list = process.env.CONTRIBUTOR_INVITE_EMAILS?.split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

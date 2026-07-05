@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SyftinLogo } from "@/components/brand/syftin-logo";
 import { AccessRequestForm } from "@/components/landing/access-request-form";
+import { ContributorDirectLoginForm } from "@/components/auth/contributor-direct-login-form";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -70,7 +71,7 @@ export function LoginForm() {
           </h1>
           <p className="app-page-lead">
             {isContributor
-              ? "We'll email you a secure sign-in link for the contributor portal."
+              ? "Enter your contributor email to sign in instantly — no magic link required."
               : "We'll email you a secure sign-in link for the Syftin dashboard."}
           </p>
 
@@ -78,12 +79,18 @@ export function LoginForm() {
             <p className="mt-4 text-sm text-red-600 dark:text-red-400">{initialError}</p>
           )}
 
-          <AccessRequestForm
-            source="login"
-            variant="login"
-            next={next}
-            className="mt-8"
-          />
+          {isContributor ? (
+            <div className="mt-8">
+              <ContributorDirectLoginForm />
+            </div>
+          ) : (
+            <AccessRequestForm
+              source="login"
+              variant="login"
+              next={next}
+              className="mt-8"
+            />
+          )}
 
           <p className="mt-8 text-center text-xs leading-relaxed text-graphite-400 dark:text-graphite-400">
             By continuing, you agree to our{" "}
